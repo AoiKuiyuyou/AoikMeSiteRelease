@@ -101,13 +101,14 @@
   <!-- post_content -->
   <!-- `v-pre` aims to skip Vue parsing -->
   <article v-pre class="post_content_block markdown-body">
-  <h1 id="python-39-s-compiler-from-grammar-to-dfa">Python&#39;s compiler - from grammar to dfa</h1><p>Python&#39;s compiler series:</p>
+  <h1 id="python-39-s-compiler-from-grammar-to-dfa">Python&#39;s compiler - from grammar to dfa</h1><p><strong>Python&#39;s compiler series:</strong></p>
 <ul>
 <li><a href="/blog/posts/python-3.8.0-execution-flow">Python 3.8.0 execution flow</a></li>
 <li><a href="/blog/posts/python-compiler-from-grammar-to-dfa">Python&#39;s compiler - from grammar to DFA</a></li>
 <li><a href="/blog/posts/python-compiler-the-grammar-file-is-not-ll1-but-the-parser-is">Python&#39;s compiler - the grammar file is not LL(1) but the parser is</a></li>
 <li><a href="/blog/posts/python-compiler-from-tokens-to-cst">Python&#39;s compiler - from tokens to CST</a></li>
 <li><a href="/blog/posts/python-compiler-from-cst-to-ast">Python&#39;s compiler - from CST to AST</a></li>
+<li><a href="/blog/posts/python-compiler-from-ast-to-code-object">Python&#39;s compiler - from AST to code object</a></li>
 </ul>
 <p><br>Python&#39;s grammar is LL(1). Instead of using a top-down recursive descent parser, Python uses a DFA-based (Pushdown Automata, more precisely) parser. In Python 3.7, the parser generator <strong>pgen</strong> (<a href="https://github.com/python/cpython/blob/v3.7.0/Parser/pgenmain.c">Parser/pgenmain.c</a>, <a href="https://github.com/python/cpython/blob/v3.7.0/Parser/pgen.c">Parser/pgen.c</a>) is responsible for parsing the grammar file <a href="https://github.com/python/cpython/blob/v3.7.0/Grammar/Grammar">Grammar/Grammar</a> into DFA transition diagram, stored as files <a href="https://github.com/python/cpython/blob/v3.7.0/Include/graminit.h">Include/graminit.h</a> and <a href="https://github.com/python/cpython/blob/v3.7.0/Python/graminit.c">Python/graminit.c</a>. The DFA transition diagram is then used by the DFA-based parser to parse Python code.</p>
 <p>To parse the <a href="https://github.com/python/cpython/blob/v3.7.0/Grammar/Grammar">Grammar/Grammar</a> file, <strong>pgen</strong> uses the same DFA-based parser that parses Python code. The only difference is the DFA transition diagram used, which is defined in <a href="https://github.com/python/cpython/blob/v3.7.0/Parser/metagrammar.c#L142">Parser/metagrammar.c</a>. This file is generated using the meta-grammar of the <a href="https://github.com/python/cpython/blob/v3.7.0/Grammar/Grammar">Grammar/Grammar</a> file. Although the meta-grammar file is not present in Python&#39;s reporsitory, by examining functions with initial <code>compile_</code> in <a href="https://github.com/python/cpython/blob/v3.7.0/Parser/pgen.c#L180">Parser/pgen.c</a>, we can infer the meta-grammar as:</p>

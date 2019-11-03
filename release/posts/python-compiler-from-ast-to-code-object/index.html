@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- head -->
+<head>
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-117972998-1"></script>
+  <script>
+    var hostname = window.location.hostname;
+    if (hostname && hostname !== '127.0.0.1' && hostname !== 'localhost' && hostname !== 'aoik.me.local') {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-117972998-1');
+    }
+  </script>
+  <!-- Google Analytics -->
+
+  <!-- head_meta -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <!-- head_meta -->
+
+  <!-- head_title -->
+  <title>Python's compiler - from AST to code object</title>
+  <!-- head_title -->
+
+  <!-- head_links -->
+  <link rel="stylesheet" href="/blog/libs_outer/bootstrap/4.0.0/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/blog/libs_outer/github-markdown-css/2.10.0/github-markdown.css">
+  <link rel="stylesheet" href="/blog/libs_inner/base/base.css">
+  <!-- head_links -->
+
+  <!-- head_links2 -->
+
+<link rel="stylesheet" href="/blog/libs_outer/toastr/2.1.3/toastr.min.css">
+<link rel="stylesheet" href="/blog/libs_outer/highlight/9.12.0/highlight.min.css">
+  <!-- head_links2 -->
+
+  <!-- head_styles -->
+  <!-- head_styles -->
+</head>
+<!-- head -->
+
+<body>
+<div id="vue_app">
+
+<!-- header -->
+<header>
+  <!-- header_inner -->
+  <!-- logo -->
+  <a class="logo_block" href="/blog"><span class="logo_text">Aoik</span></a>
+  <!-- nav -->
+  <nav class="nav_block">
+    <div class="nav_table">
+      <a class="current" href="/blog/posts"><span>Posts</span></a>
+      <a class="" href="/blog/reposts"><span>Reposts</span></a>
+      <a class="" href="/blog/tags"><span>Tags</span></a>
+      <a target="_blank" href="https://github.com/AoiKuiyuyou/Aoik/blob/master/README.md"><span>Github</span></a>
+      <a target="_blank" href="http://aoikuiyuyou.github.io/me.html"><span>Resume</span></a>
+    </div>
+  </nav>
+  <!-- header_inner -->
+</header>
+<!-- header -->
+
+<!-- main -->
+<main>
+  <!-- main_inner -->
+  
+  <!-- breadcrumbs -->
+  <div class="breadcrumbs_block">
+    <a href="/blog">Home</a>
+    <span class="sep">&gt;</span>
+    <a href="/blog/posts">Posts</a>
+    <span class="sep">&gt;</span>
+    <a href="">This</a>
+  </div>
+  <!-- breadcrumbs -->
+
+
+
+  <!-- post_info -->
+  <div class="post_info_block">
+    <div class="tags_block">
+    <a class="tag" href="/blog/tags/python">python</a>
+    <a class="tag" href="/blog/tags/compiler">compiler</a>
+    <a class="tag" href="/blog/tags/source-code-study">source-code-study</a>
+    <a class="tag" href="/blog/tags/吸星大法强吃源码">吸星大法强吃源码</a>
+    </div>
+    <div class="fields_block">
+      <span class="author">Aoik,</span>
+      <span class="create_time">2019.11.03</span>
+    </div>
+  </div>
+  <!-- post_info -->
+
+  <!-- post_content -->
+  <!-- `v-pre` aims to skip Vue parsing -->
+  <article v-pre class="post_content_block markdown-body">
+  <h1 id="python-39-s-compiler-from-ast-to-code-object">Python&#39;s compiler - from AST to code object</h1><p><strong>Python&#39;s compiler series:</strong></p>
+<ul>
+<li><a href="/blog/posts/python-3.8.0-execution-flow">Python 3.8.0 execution flow</a></li>
+<li><a href="/blog/posts/python-compiler-from-grammar-to-dfa">Python&#39;s compiler - from grammar to DFA</a></li>
+<li><a href="/blog/posts/python-compiler-the-grammar-file-is-not-ll1-but-the-parser-is">Python&#39;s compiler - the grammar file is not LL(1) but the parser is</a></li>
+<li><a href="/blog/posts/python-compiler-from-tokens-to-cst">Python&#39;s compiler - from tokens to CST</a></li>
+<li><a href="/blog/posts/python-compiler-from-cst-to-ast">Python&#39;s compiler - from CST to AST</a></li>
+<li><a href="/blog/posts/python-compiler-from-ast-to-code-object">Python&#39;s compiler - from AST to code object</a></li>
+</ul>
+<p><br><a href="https://github.com/python/cpython/blob/v3.8.0/Python/compile.c#L312">Python/compile.c::PyAST_CompileObject</a> compiles AST node to code object.</p>
+<p>First, <a href="https://github.com/python/cpython/blob/v3.8.0/Python/symtable.c#L262">Python/symtable.c::PySymtable_BuildObject</a> builds a symbol table from the AST. The
+symbol table stores the scope type of each name symbol in each code block.</p>
+<p>Then <a href="https://github.com/python/cpython/blob/v3.8.0/Python/compile.c#L1782">Python/compile.c::compiler_mod</a> visits each node in the AST to emit bytecode, and creates
+a code object in the end.</p>
+<p>The execution flow:</p>
+<pre><code># ----- 5FZWJ -----
+# Compile AST node to code object.
+compile.c--PyAST_CompileObject
+
+  compile.c--compiler_init
+
+  future.c--PyFuture_FromASTObject
+
+    future.c--future_parse
+
+  # Optimize AST.
+  ast_opt.c--_PyAST_Optimize..(3XQGF)
+
+  # Build symbol table.
+  symtable.c--PySymtable_BuildObject..(63ZYP)
+
+  # Emit bytecode and create code object.
+  compile.c--compiler_mod..(7CHWS)
+
+
+# ----- 3XQGF -----
+# Optimize AST.
+ast_opt.c--_PyAST_Optimize
+
+  ast_opt.c--astfold_mod
+
+    switch on AST node type
+    case Module_kind:
+      ast_opt.c--astfold_body
+
+    case Interactive_kind:
+      ast_opt.c--astfold_stmt
+
+    case Expression_kind:
+      ast_opt.c--astfold_expr
+        switch on AST node type
+        case BinOp_kind:
+          ast_opt.c--fold_binop
+            # E.g. 1 + 2 -&gt; 3
+
+    case Suite_kind:
+      ast_opt.c--astfold_stmt
+
+
+# ----- 63ZYP -----
+# Build symbol table.
+symtable.c--PySymtable_BuildObject
+
+  symtable.c--symtable_new
+
+  symtable.c--symtable_enter_block..(2THN6)
+
+  # Use the starting STE as top STE.
+  st-&gt;st_top = st-&gt;st_cur;
+
+  switch on AST node type
+  case Module_kind:
+    symtable.c--symtable_visit_stmt..(3JFQP)
+
+  case Expression_kind:
+    symtable.c--symtable_visit_expr..(2HWSA)
+
+  case Interactive_kind:
+    symtable.c--symtable_visit_stmt..(3JFQP)
+
+  symtable.c--symtable_exit_block..(3YZZ1)
+
+  symtable.c--symtable_analyze..(6IAAL)
+
+
+# ----- 2THN6 -----
+symtable.c--symtable_enter_block
+
+  symtable.c--ste_new
+    # `key` is the AST node.
+    k = PyLong_FromVoidPtr(key);
+
+    # Create STE.
+    ste = PyObject_New(PySTEntryObject, &amp;PySTEntry_Type)
+
+    ste-&gt;ste_table = st
+
+    # Used as key into `st-&gt;st_blocks`.
+    ste-&gt;ste_id = k
+
+    # Store the mapping from AST node key to STE.
+    PyDict_SetItem(st-&gt;st_blocks, ste-&gt;ste_id, (PyObject *)ste)
+
+  # Push new STE to stack.
+  PyList_Append(st-&gt;st_stack, (PyObject *)ste)
+
+  # Get previous STE.
+  prev = st-&gt;st_cur;
+
+  # Set new current STE.
+  st-&gt;st_cur = ste;
+
+  if the block is module block:
+    # Use the module&#39;s symbols as global symbols.
+    st-&gt;st_global = st-&gt;st_cur-&gt;ste_symbols;
+
+  if have previous STE:
+    # Add current STE as previous STE&#39;s child.
+    PyList_Append(prev-&gt;ste_children, (PyObject *)ste)
+
+
+# ----- 3YZZ1 -----
+symtable.c--symtable_exit_block
+
+  # Pop current STE off stack.
+  PyList_SetSlice(st-&gt;st_stack, size - 1, size, NULL)
+
+  # Set previous STE as new current STE.
+  st-&gt;st_cur = (PySTEntryObject *)PyList_GET_ITEM(st-&gt;st_stack, size - 1)
+
+
+# ----- 3JFQP -----
+symtable.c--symtable_visit_stmt
+
+  switch on node type:
+  case FunctionDef_kind:
+    VISIT_SEQ(st, expr, s-&gt;v.FunctionDef.args-&gt;defaults);
+    VISIT_SEQ_WITH_NULL(st, expr, s-&gt;v.FunctionDef.args-&gt;kw_defaults);
+    symtable.c--symtable_visit_annotations
+    VISIT_SEQ(st, expr, s-&gt;v.FunctionDef.decorator_list);
+    symtable.c--symtable_enter_block
+    VISIT(st, arguments, s-&gt;v.FunctionDef.args);
+    VISIT_SEQ(st, stmt, s-&gt;v.FunctionDef.body);
+    symtable.c--symtable_exit_block
+
+  case ClassDef_kind:
+    symtable.c--symtable_add_def
+    VISIT_SEQ(st, expr, s-&gt;v.ClassDef.bases);
+    VISIT_SEQ(st, keyword, s-&gt;v.ClassDef.keywords);
+    VISIT_SEQ(st, expr, s-&gt;v.ClassDef.decorator_list);
+    symtable.c--symtable_enter_block
+    VISIT_SEQ(st, stmt, s-&gt;v.ClassDef.body);
+    symtable.c--symtable_exit_block
+
+
+# ----- 2HWSA -----
+symtable.c--symtable_visit_expr
+  switch on AST node type
+  case Name_kind:
+    # symtable.c--symtable_add_def..(7ZKQ4)
+    symtable_add_def(
+      st, e-&gt;v.Name.id,
+      e-&gt;v.Name.ctx == Load ? USE : DEF_LOCAL
+    )
+
+    if (e-&gt;v.Name.ctx == Load &amp;&amp;
+        st-&gt;st_cur-&gt;ste_type == FunctionBlock &amp;&amp;
+        _PyUnicode_EqualToASCIIString(e-&gt;v.Name.id, &quot;super&quot;)) {
+        symtable_add_def(st, __class__, USE)
+    }
+
+
+# ----- 7ZKQ4 -----
+symtable.c--symtable_add_def
+
+  symtable.c--symtable_add_def_helper
+    mangled = _Py_Mangle(st-&gt;st_private, name)
+
+    dict = ste-&gt;ste_symbols;
+
+    PyDict_SetItem(dict, mangled, o)
+
+    if (flag &amp; DEF_PARAM) {
+        PyList_Append(ste-&gt;ste_varnames, mangled)
+    } else if (flag &amp; DEF_GLOBAL) {
+        PyDict_SetItem(st-&gt;st_global, mangled, o)
+    }
+
+
+# ----- 6IAAL -----
+symtable.c--symtable_analyze
+
+  # Create `free` set.
+
+  # Create `global` set.
+
+  symtable.c--analyze_block..(5VUKP)
+
+
+# ----- 5VUKP -----
+symtable.c--analyze_block
+  # Argument `ste`: current symtable entry (input/output)
+  # Argument `bound`: set of bound names in enclosing blocks (input).
+  # NULL for module blocks.
+  # Argument `free`: set of free names in child blocks (output).
+  # Argument `globals`: set of declared global names in enclosing blocks (input).
+
+  # Create `local` set for new names bound in current block.
+
+  # Create `scopes` dict that maps symbol name to scope type.
+
+  # Create `newglobal` set to be visible in enclosed blocks.
+
+  # Create `newfree` set.
+
+  # Create `newbound` set to be visible in enclosed blocks.
+
+  /* Class namespace has no effect on names visible in
+     nested functions, so populate the global and bound
+     sets to be passed to child blocks before analyzing
+     this one.
+   */
+  if current block is class block:
+      # Use enclosing block&#39; global set.
+      # So current block does not add anything to it.
+      newglobal |= global
+
+      # Use enclosing block&#39; bound set.
+      # So current block does not add anything to it.
+      newbound |= bound
+
+  for each symbol name in `ste-&gt;ste_symbols`:
+    # Store each symbol name&#39;s scope type in `scopes`.
+    # Current block&#39;s symbol names are added to `local`, `free`, `global`.
+    symtable.c--analyze_name..(6W6VV)
+
+  if current block is not class block:
+      if current block is function block:
+          # Module block&#39;s names are not to be visible as bound names to child
+          # blocks. Uses of these names will be given scope type
+          # GLOBAL_IMPLICIT.
+          newbound |= local
+
+      newbound |= bound
+
+      newglobal |= global
+  else:
+      # To support `super()`.
+      PySet_Add(newbound, __class__)
+
+  # Create `allfree` set.
+
+  for each child STE:
+    # In `analyze_child_block`, a copy of `newfree` will be used as the
+    # starting free names set. `newfree` is empty so the starting free names
+    # set is empty. The child block&#39;s free names set after analysis will be
+    # added to `allfree`.
+    symtable.c--analyze_child_block..(6JYZB)
+    ```
+    analyze_child_block(entry, newbound, newfree, newglobal,
+                               allfree)
+    ```
+
+  # Now `newfree` contains child blocks&#39; free names.
+  newfree |= allfree
+
+  if current block is function block:
+    symtable.c--analyze_cells..(5MJYX)
+    ```
+    analyze_cells(scopes, newfree)
+    ```
+  elif current block is class block:
+    symtable.c--drop_class_free..(6P3G2)
+    ```
+    drop_class_free(ste, newfree)
+    ```
+
+  symtable.c--update_symbols..(3DWGU)
+  ```
+  update_symbols(ste-&gt;ste_symbols, scopes, bound, newfree,
+                      ste-&gt;ste_type == ClassBlock)
+  ```
+
+  # Now `free` contains enclosing, current, and child blocks&#39; free names.
+  free |= newfree
+
+
+# ----- 6JYZB -----
+symtable.c--analyze_child_block
+  temp_bound = PySet_New(bound)
+  temp_free = PySet_New(free)
+  temp_global = PySet_New(global)
+  # symtable.c--analyze_block..(5VUKP)
+  analyze_block(entry, temp_bound, temp_free, temp_global)
+  child_free |= temp_free
+
+
+# ----- 6W6VV -----
+# Store each symbol name&#39;s scope type in `scopes`.
+# Current block&#39;s symbol names are added to `local`, `free`, `global`.
+symtable.c--analyze_name
+  if (flags &amp; DEF_GLOBAL) {
+      if (flags &amp; DEF_NONLOCAL) {
+          PyErr_Format(PyExc_SyntaxError,
+                       &quot;name &#39;%U&#39; is nonlocal and global&quot;,
+                       name);
+          return error_at_directive(ste, name);
+      }
+      SET_SCOPE(scopes, name, GLOBAL_EXPLICIT);
+      if (PySet_Add(global, name) &lt; 0)
+          return 0;
+      if (bound &amp;&amp; (PySet_Discard(bound, name) &lt; 0))
+          return 0;
+      return 1;
+  }
+  if (flags &amp; DEF_NONLOCAL) {
+      if (!bound) {
+          PyErr_Format(PyExc_SyntaxError,
+                       &quot;nonlocal declaration not allowed at module level&quot;);
+          return error_at_directive(ste, name);
+      }
+      if (!PySet_Contains(bound, name)) {
+          PyErr_Format(PyExc_SyntaxError,
+                       &quot;no binding for nonlocal &#39;%U&#39; found&quot;,
+                       name);
+
+          return error_at_directive(ste, name);
+      }
+      SET_SCOPE(scopes, name, FREE);
+      ste-&gt;ste_free = 1;
+      return PySet_Add(free, name) &gt;= 0;
+  }
+  if (flags &amp; DEF_BOUND) {
+      SET_SCOPE(scopes, name, LOCAL);
+      if (PySet_Add(local, name) &lt; 0)
+          return 0;
+      if (PySet_Discard(global, name) &lt; 0)
+          return 0;
+      return 1;
+  }
+  /* If an enclosing block has a binding for this name, it
+     is a free variable rather than a global variable.
+     Note that having a non-NULL bound implies that the block
+     is nested.
+  */
+  if (bound &amp;&amp; PySet_Contains(bound, name)) {
+      SET_SCOPE(scopes, name, FREE);
+      ste-&gt;ste_free = 1;
+      return PySet_Add(free, name) &gt;= 0;
+  }
+  /* If a parent has a global statement, then call it global
+     explicit?  It could also be global implicit.
+   */
+  if (global &amp;&amp; PySet_Contains(global, name)) {
+      SET_SCOPE(scopes, name, GLOBAL_IMPLICIT);
+      return 1;
+  }
+  if (ste-&gt;ste_nested)
+      ste-&gt;ste_free = 1;
+  SET_SCOPE(scopes, name, GLOBAL_IMPLICIT);
+  return 1;
+
+
+# ----- 5MJYX -----
+symtable.c--analyze_cells
+  for each symbol name in `scopes`:
+    if the scope type is LOCAL:
+      if the name is in child blocks&#39; free set:
+        # Set the name&#39;s scope type to be CELL.
+
+        # Remove the name from the free set.
+
+
+# ----- 6P3G2 -----
+symtable.c--drop_class_free
+  # Remove the `__class__` name from child blocks&#39; free set.
+
+  if the `__class__` name existed:
+    ste-&gt;ste_needs_class_closure = 1
+
+
+# ----- 3DWGU -----
+symtable.c--update_symbols
+  for current block&#39;s each symbol name:
+    # Add the name&#39;s scope value in `scopes` to the flags in `symbols`.
+
+  for each symbol name in child blocks&#39; free name sets:
+    # Find the free name in current block&#39;s `symbols`.
+    v = PyDict_GetItemWithError(symbols, name);
+
+    # If the free name exists in current block&#39;s `symbols`.
+    if (v) {
+        /* Handle a free variable in a method of
+           the class that has the same name as a local
+           or global in the class scope.
+        */
+        # If current block is class block and the name is bound or global.
+        # Notice class block&#39;s names are not visible to child blocks,
+        # so the name is bound in an enclosing function block of the class.
+        # E.g.
+        # ```
+        # def f():
+        #     a = 1
+        #     class A():
+        #         a = 2
+        #         def g():
+        #             return a
+        #     return A
+        # A = f()
+        # assert A.g() == 1
+        # ```
+        if  (classflag &amp;&amp;
+             PyLong_AS_LONG(v) &amp; (DEF_BOUND | DEF_GLOBAL)) {
+
+            # Add `DEF_FREE_CLASS` to the flags.
+            long flags = PyLong_AS_LONG(v) | DEF_FREE_CLASS;
+            v_new = PyLong_FromLong(flags);
+            PyDict_SetItem(symbols, name, v_new)
+        }
+        /* It&#39;s a cell, or already free in this scope */
+        continue;
+    }
+    else if (PyErr_Occurred()) {
+        goto error;
+    }
+    /* Handle global symbol */
+    if (bound &amp;&amp; !PySet_Contains(bound, name)) {
+        continue;       /* it&#39;s a global */
+    }
+    /* Propagate new free symbol up the lexical stack */
+    # E.g. `g` implicitly uses free name `a` because child block `h` uses `a`.
+    # ```
+    # def f():
+    #     a = 1
+    #     def g():
+    #         def h():
+    #             return a
+    # ```
+    PyDict_SetItem(symbols, name, v_free)
+
+
+# ----- 7CHWS -----
+# Emit bytecode and create code object.
+compile.c--compiler_mod
+
+  compile.c--compiler_enter_scope..(5E13Z)
+
+  switch on AST node type
+  case Module_kind:
+    compile.c--compiler_body
+      for each statement in AST node:
+        compile.c--compiler_visit_stmt..(7C0ZR)
+
+  case Interactive_kind:
+    c-&gt;c_interactive = 1
+    VISIT_SEQ_IN_SCOPE(c, stmt, mod-&gt;v.Interactive.body)
+      for each statement in AST node:
+        compile.c--compiler_visit_stmt..(7C0ZR)
+
+  case Expression_kind:
+    VISIT_IN_SCOPE(c, expr, mod-&gt;v.Expression.body)
+      compile.c--compiler_visit_expr..(3FCOE)
+
+  # Create code object.
+  compile.c--assemble..(3LDD9)
+
+  compile.c--compiler_exit_scope..(2PQFC)
+
+
+# ----- 5E13Z -----
+compile.c--compiler_enter_scope
+
+  # Create `compiler_unit`.
+
+  # Find the STE for the AST node.
+  u-&gt;u_ste = PySymtable_Lookup(c-&gt;c_st, key);
+
+  # Get the mapping from function parameter names to their index in `ste_varnames`.
+  u-&gt;u_varnames = list2dict(u-&gt;u_ste-&gt;ste_varnames);
+
+  # Get the mapping from cell names to their sorted index.
+  u-&gt;u_cellvars = dictbytype(u-&gt;u_ste-&gt;ste_symbols, CELL, 0, 0);
+
+  if ste_needs_class_closure is on {
+    Add `__class__` to `u-&gt;u_cellvars` as the only cell variable.
+  }
+
+  # Get the mapping from free names to their sorted index.
+  # The starting index is `PyDict_GET_SIZE(u-&gt;u_cellvars)` so that free
+  # variables come after cell variables.
+  u-&gt;u_freevars = dictbytype(u-&gt;u_ste-&gt;ste_symbols, FREE, DEF_FREE_CLASS, PyDict_GET_SIZE(u-&gt;u_cellvars));
+
+  # Create constant objects dict.
+  u-&gt;u_consts = PyDict_New();
+
+  # Create all names dict.
+  u-&gt;u_names = PyDict_New();
+
+  if have current compiler unit:
+    # capsule.c--PyCapsule_New
+    capsule = PyCapsule_New
+
+    PyList_Append(c-&gt;c_stack, capsule)
+
+    u-&gt;u_private = c-&gt;u-&gt;u_private;
+
+  # Set the new current compiler unit.
+  c-&gt;u = u
+
+  c-&gt;c_nestlevel++
+
+  # Create basicblock.
+  block = compiler_new_block(c);
+
+    u = c-&gt;u;
+
+    b = (basicblock *)PyObject_Malloc(sizeof(basicblock));
+
+    # Point the new `basicblock`&#39;s `b_list` to previous `basicblock`.
+    b-&gt;b_list = u-&gt;u_blocks;
+
+    # Point the compiler unit&#39;s `u_blocks` to the new `basicblock`.
+    u-&gt;u_blocks = b;
+
+  # Set the new current `basicblock`.
+  c-&gt;u-&gt;u_curblock = block;
+
+  if the scope type is not COMPILER_SCOPE_MODULE:
+    compile.c--compiler_set_qualname
+
+
+# ----- 6PFS7 -----
+compiler.c--dictbytype
+  /* Sort the keys so that we have a deterministic order on the indexes
+     saved in the returned dictionary.  These indexes are used as indexes
+     into the free and cell var storage.  Therefore if they aren&#39;t
+     deterministic, then the generated bytecode is not deterministic.
+  */
+  sorted_keys = PyDict_Keys(src);
+
+  PyList_Sort(sorted_keys)
+
+  for each symbol name in the symbol flags dict:
+    if scope type matches or flag matches:
+      # Store in the result dict the mapping from the symbol name to the
+      # sorted index.
+
+
+# ----- 2PQFC -----
+compile.c--compiler_exit_scope
+  c-&gt;c_nestlevel--
+
+  compile.c--compiler_unit_free
+
+  # Set the new current compiler unit `c-&gt;u`.
+
+
+# ----- 7C0ZR -----
+compile.c--compiler_visit_stmt
+
+  switch on AST node type
+  case FunctionDef_kind
+    compile.c--compiler_function
+      compile.c--assemble..(3LDD9)
+
+      compile.c--compiler_make_closure..(2VZ9S)
+
+      # compile.c--compiler_nameop..(7TFBR)
+      compiler_nameop(c, name, Store)
+
+  case ClassDef_kind
+    compile.c--compiler_class
+      compile.c--assemble..(3LDD9)
+
+
+# ----- 2VZ9S -----
+compile.c--compiler_make_closure
+  if have free names:
+    for each free name:
+      reftype = get_ref_type(c, name)
+
+      if (reftype == CELL)
+          arg = compiler_lookup_arg(c-&gt;u-&gt;u_cellvars, name)
+      else /* (reftype == FREE) */
+          arg = compiler_lookup_arg(c-&gt;u-&gt;u_freevars, name)
+
+      ADDOP_I(c, LOAD_CLOSURE, arg)
+
+    flags |= 0x08;
+
+    ADDOP_I(c, BUILD_TUPLE, free)
+
+  # compile.c--ADDOP_LOAD_CONST..(5OUDE)
+  ADDOP_LOAD_CONST(c, (PyObject*)co)
+
+  ADDOP_LOAD_CONST(c, qualname)
+
+  ADDOP_I(c, MAKE_FUNCTION, flags)
+
+
+# ----- 5OUDE -----
+compile.c--ADDOP_LOAD_CONST
+
+  compile.c--compiler_addop_load_const
+
+    # compile.c--compiler_add_const..(5XEK7)
+    arg = compiler_add_const(c, o)
+
+    # compile.c--compiler_addop_i..(2ABPQ)
+    compiler_addop_i(c, LOAD_CONST, arg)
+
+
+# ----- 5XEK7 -----
+# Add a constant object to `c-&gt;u-&gt;u_consts`.
+compile.c--compiler_add_const
+
+  key = merge_consts_recursive(c, o)
+
+  compile.c--compiler_add_o..(7XORR)
+
+
+
+# ----- 7XORR -----
+compile.c--compiler_add_o
+
+  # Store the mapping from `key` to index.
+
+
+# ----- 2ABPQ -----
+compile.c--compiler_addop_i
+  # Get next instruction&#39;s offset.
+  # compile.c--compiler_next_instr..(5XZHW)
+  off = compiler_next_instr(c, c-&gt;u-&gt;u_curblock);
+
+  # Get the instruction struct.
+  i = &amp;c-&gt;u-&gt;u_curblock-&gt;b_instr[off];
+
+  # Set the opcode.
+  i-&gt;i_opcode = opcode;
+
+  # Set the oparg.
+  i-&gt;i_oparg = Py_SAFE_DOWNCAST(oparg, Py_ssize_t, int);
+
+  # Set line number.
+  compiler_set_lineno(c, off);
+
+
+# ----- 5XZHW -----
+# Get next instruction&#39;s offset.
+compile.c--compiler_next_instr
+
+  # Resize instructions array if needed.
+
+  # Return next instruction&#39;s offset.
+  b-&gt;b_iused++
+
+
+# ----- 3FCOE -----
+compile.c--compiler_visit_expr..(3FCOE)
+  # Set new line and column numbers.
+
+  compile.c--compiler_visit_expr1..(5ME7U)
+
+  # Restore old line and column numbers.
+
+
+# ----- 5ME7U -----
+compile.c--compiler_visit_expr1
+  switch on AST node type
+  case Name_kind:
+    compile.c--compiler_nameop..(7TFBR)
+
+  case Lambda_kind:
+    compile.c--compiler_lambda
+
+  case GeneratorExp_kind:
+    compile.c--compiler_genexp
+      compile.c--compiler_comprehension
+        compile.c--assemble..(3LDD9)
+
+  case ListComp_kind:
+    compile.c--compiler_listcomp
+      compile.c--compiler_comprehension
+        compile.c--assemble..(3LDD9)
+
+  case SetComp_kind:
+    compile.c--compiler_setcomp
+      compile.c--compiler_comprehension
+        compile.c--assemble..(3LDD9)
+
+  case DictComp_kind:
+    compile.c--compiler_dictcomp
+      compile.c--compiler_comprehension
+        compile.c--assemble..(3LDD9)
+
+
+# ----- 7TFBR -----
+compile.c--compiler_nameop
+  mangled = _Py_Mangle(c-&gt;u-&gt;u_private, name);
+
+  scope = PyST_GetScope(c-&gt;u-&gt;u_ste, mangled);
+
+  switch (scope) {
+  case FREE:
+      dict = c-&gt;u-&gt;u_freevars;
+      optype = OP_DEREF;
+      break;
+  case CELL:
+      dict = c-&gt;u-&gt;u_cellvars;
+      optype = OP_DEREF;
+      break;
+  case LOCAL:
+      if (c-&gt;u-&gt;u_ste-&gt;ste_type == FunctionBlock)
+          optype = OP_FAST;
+      break;
+  case GLOBAL_IMPLICIT:
+      if (c-&gt;u-&gt;u_ste-&gt;ste_type == FunctionBlock)
+          optype = OP_GLOBAL;
+      break;
+  case GLOBAL_EXPLICIT:
+      optype = OP_GLOBAL;
+      break;
+  default:
+      /* scope can be 0 */
+      break;
+  }
+
+  switch (optype) {
+  case OP_DEREF:
+      switch (ctx) {
+      case Load:
+          op = (c-&gt;u-&gt;u_ste-&gt;ste_type == ClassBlock) ? LOAD_CLASSDEREF : LOAD_DEREF;
+          break;
+      case Store:
+          op = STORE_DEREF;
+          break;
+      case AugLoad:
+      case AugStore:
+          break;
+      case Del: op = DELETE_DEREF; break;
+      case Param:
+      default:
+          PyErr_SetString(PyExc_SystemError,
+                          &quot;param invalid for deref variable&quot;);
+          return 0;
+      }
+      break;
+  case OP_FAST:
+      switch (ctx) {
+      case Load: op = LOAD_FAST; break;
+      case Store:
+          op = STORE_FAST;
+          break;
+      case Del: op = DELETE_FAST; break;
+      case AugLoad:
+      case AugStore:
+          break;
+      case Param:
+      default:
+          PyErr_SetString(PyExc_SystemError,
+                          &quot;param invalid for local variable&quot;);
+          return 0;
+      }
+      ADDOP_N(c, op, mangled, varnames);
+      return 1;
+  case OP_GLOBAL:
+      switch (ctx) {
+      case Load: op = LOAD_GLOBAL; break;
+      case Store:
+          op = STORE_GLOBAL;
+          break;
+      case Del: op = DELETE_GLOBAL; break;
+      case AugLoad:
+      case AugStore:
+          break;
+      case Param:
+      default:
+          PyErr_SetString(PyExc_SystemError,
+                          &quot;param invalid for global variable&quot;);
+          return 0;
+      }
+      break;
+  case OP_NAME:
+      switch (ctx) {
+      case Load: op = LOAD_NAME; break;
+      case Store:
+          op = STORE_NAME;
+          break;
+      case Del: op = DELETE_NAME; break;
+      case AugLoad:
+      case AugStore:
+          break;
+      case Param:
+      default:
+          PyErr_SetString(PyExc_SystemError,
+                          &quot;param invalid for name variable&quot;);
+          return 0;
+      }
+      break;
+  }
+
+  # compile.c--compiler_add_o..(7XORR)
+  arg = compiler_add_o(c, dict, mangled)
+
+  # compile.c--compiler_addop_i..(2ABPQ)
+  compiler_addop_i(c, op, arg)
+
+
+# ----- 3LDD9 -----
+# Create code object.
+compile.c--assemble
+  if (!c-&gt;u-&gt;u_curblock-&gt;b_return) {
+      NEXT_BLOCK(c);
+        compiler_next_block
+          compiler_new_block
+            c-&gt;u-&gt;u_curblock-&gt;b_next = block;
+            c-&gt;u-&gt;u_curblock = block;
+      if (addNone)
+          ADDOP_LOAD_CONST(c, Py_None);
+      ADDOP(c, RETURN_VALUE);
+  }
+
+  # Get entry block and blocks count.
+
+  # Set `c-&gt;u-&gt;u_firstlineno`.
+
+  compile.c--assemble_init
+  ```
+  assemble_init(&amp;a, nblocks, c-&gt;u-&gt;u_firstlineno)
+  ```
+    a-&gt;a_bytecode = PyBytes_FromStringAndSize(NULL, DEFAULT_CODE_SIZE)
+
+    a-&gt;a_lnotab = PyBytes_FromStringAndSize(NULL, DEFAULT_LNOTAB_SIZE)
+
+    a-&gt;a_postorder = (basicblock **)PyObject_Malloc(
+                                        sizeof(basicblock *) * nblocks);
+
+  # Sort blocks in DFS postorder.
+  compile.c--dfs..(2KCRZ)
+
+  # Set jump offsets.
+  compile.c--assemble_jump_offsets..(6BEOL)
+
+  for each block in DFS reverse postorder:
+    for the block&#39;s each instruction:
+      # Emit bytecode.
+      compile.c--assemble_emit..(3D2A6)
+
+  # Resize line number table to just fit.
+
+  # Resize bytecode array to just fit.
+
+  # Create code object.
+  compile.c--makecode..(61S2D)
+
+
+# ----- 2KCRZ -----
+Sort blocks in DFS postorder.
+
+static void
+dfs(struct compiler *c, basicblock *b, struct assembler *a, int end)
+{
+    int i, j;
+
+    /* Get rid of recursion for normal control flow.
+       Since the number of blocks is limited, unused space in a_postorder
+       (from a_nblocks to end) can be used as a stack for still not ordered
+       blocks. */
+    for (j = end; b &amp;&amp; !b-&gt;b_seen; b = b-&gt;b_next) {
+        b-&gt;b_seen = 1;
+        assert(a-&gt;a_nblocks &lt; j);
+        a-&gt;a_postorder[--j] = b;
+    }
+    while (j &lt; end) {
+        b = a-&gt;a_postorder[j++];
+        for (i = 0; i &lt; b-&gt;b_iused; i++) {
+            struct instr *instr = &amp;b-&gt;b_instr[i];
+            if (instr-&gt;i_jrel || instr-&gt;i_jabs)
+                dfs(c, instr-&gt;i_target, a, j);
+        }
+        assert(a-&gt;a_nblocks &lt; j);
+        a-&gt;a_postorder[a-&gt;a_nblocks++] = b;
+    }
+}
+
+
+# ----- 6BEOL -----
+# Set jump offsets.
+compile.c--assemble_jump_offsets
+
+  do-while extended_arg_recompile:
+    totsize = 0;
+    # For each block in DFS reverse postorder.
+    for (i = a-&gt;a_nblocks - 1; i &gt;= 0; i--) {
+        # Get the block.
+        b = a-&gt;a_postorder[i];
+
+        # Get the block&#39;s size.
+        bsize = blocksize(b);
+
+        # Set the block&#39;s starting instruction offset.
+        b-&gt;b_offset = totsize;
+
+        # Get the next block&#39;s starting instruction offset.
+        totsize += bsize;
+    }
+
+    # Set off the recomputing flag.
+    extended_arg_recompile = 0;
+
+    # For each block.
+    for (b = c-&gt;u-&gt;u_blocks; b != NULL; b = b-&gt;b_list) {
+        # Get the block&#39;s instruction offset.
+        bsize = b-&gt;b_offset;
+
+        # For the block&#39;s each instruction.
+        for (i = 0; i &lt; b-&gt;b_iused; i++) {
+            # Get the instruction.
+            struct instr *instr = &amp;b-&gt;b_instr[i];
+
+            # Get the instruction&#39;s oparg size.
+            int isize = instrsize(instr-&gt;i_oparg);
+
+            /* Relative jumps are computed relative to
+               the instruction pointer after fetching
+               the jump instruction.
+            */
+            # Get the next instruction&#39;s offset.
+            bsize += isize;
+
+            # If the instruction is jump.
+            if (instr-&gt;i_jabs || instr-&gt;i_jrel) {
+                # Get the target block&#39;s offset.
+                instr-&gt;i_oparg = instr-&gt;i_target-&gt;b_offset;
+
+                # If the instruction is relative jump.
+                if (instr-&gt;i_jrel) {
+                    # Set the jump&#39;s offset.
+                    instr-&gt;i_oparg -= bsize;
+                }
+
+                # Set the jump&#39;s byte offset.
+                instr-&gt;i_oparg *= sizeof(_Py_CODEUNIT);
+
+                # If the oparg size changes,
+                # it means the block&#39;s size changes,
+                # which affects the starting offset of following blocks,
+                # so recomputing is needed.
+                if (instrsize(instr-&gt;i_oparg) != isize) {
+                    # Set on the recomputing flag.
+                    extended_arg_recompile = 1;
+                }
+            }
+        }
+    }
+
+
+# ----- 3D2A6 -----
+# Emit bytecode.
+compile.c--assemble_emit..(3D2A6)
+
+  compile.c--assemble_lnotab
+
+  # Get instructions count considering EXTENDED_ARG.
+  size = instrsize(arg);
+
+  # Resize the bytecode buffer if needed.
+
+  # Get the write position of the bytecode buffer.
+  code = (_Py_CODEUNIT *)PyBytes_AS_STRING(a-&gt;a_bytecode) + a-&gt;a_offset;
+
+  # Get the write position of the next instruction.
+  a-&gt;a_offset += size;
+
+  # Write bytecode for the instruction.
+  wordcode_helpers.h--write_op_arg..(2VYIO)
+
+
+# ----- 2VYIO -----
+wordcode_helpers.h--write_op_arg
+  switch on oparg length:
+    case 4:
+      *codestr++ = PACKOPARG(EXTENDED_ARG, (oparg &gt;&gt; 24) &amp; 0xff);
+      /* fall through */
+    case 3:
+      *codestr++ = PACKOPARG(EXTENDED_ARG, (oparg &gt;&gt; 16) &amp; 0xff);
+      /* fall through */
+    case 2:
+      *codestr++ = PACKOPARG(EXTENDED_ARG, (oparg &gt;&gt; 8) &amp; 0xff);
+      /* fall through */
+    case 1:
+      *codestr++ = PACKOPARG(opcode, oparg &amp; 0xff);
+
+
+# ----- 61S2D -----
+# Create code object.
+compile.c--makecode
+
+  # Get constants list.
+  consts_dict_keys_inorder(c-&gt;u-&gt;u_consts)
+
+  # Get all names list.
+  names = dict_keys_inorder(c-&gt;u-&gt;u_names, 0)
+
+  # Get local names list.
+  varnames = dict_keys_inorder(c-&gt;u-&gt;u_varnames, 0);
+
+  # Get cell names list.
+  cellvars = dict_keys_inorder(c-&gt;u-&gt;u_cellvars, 0);
+
+  # Get free names list.
+  freevars = dict_keys_inorder(c-&gt;u-&gt;u_freevars, PyTuple_GET_SIZE(cellvars))
+
+  compile.c--merge_const_tuple..(3PHXW)
+  ```
+  merge_const_tuple(c, &amp;names)
+
+  merge_const_tuple(c, &amp;varnames)
+
+  merge_const_tuple(c, &amp;cellvars)
+
+  merge_const_tuple(c, &amp;freevars)
+  ```
+
+  compile.c--compute_code_flags
+
+  peephole.c--PyCode_Optimize
+
+  # Convert `consts` to tuple.
+
+  compile.c--merge_const_tuple..(3PHXW)
+  merge_const_tuple(c, &amp;consts)
+
+  # Get max stack depth.
+  compile.c--stackdepth
+
+  # Create code object.
+  codeobject.c--PyCode_NewWithPosOnlyArgs..(6DQ7T)
+
+
+# ----- 3PHXW -----
+compile.c--merge_const_tuple
+  key = codeobject.c--_PyCode_ConstantKey
+
+  PyDict_SetDefault(c-&gt;c_const_cache, key, key)
+
+  if the key is new:
+    return 1
+
+  # Get the cached value.
+  PyObject *u = PyTuple_GET_ITEM(t, 1);
+
+  # Point to the cached value.
+  *tuple = u;
+
+
+# ----- 6DQ7T -----
+codeobject.c--PyCode_NewWithPosOnlyArgs
+  codeobject.c--intern_strings
+  ```
+  intern_strings(names);
+  intern_strings(varnames);
+  intern_strings(freevars);
+  intern_strings(cellvars);
+  ```
+
+  codeobject.c--intern_string_constants
+  ```
+  intern_string_constants(consts);
+  ```
+
+  if have cell names:
+    # Compute `cell2arg`.
+
+    if `cell2arg` is not used:
+      cell2arg = NULL
+  }
+
+  # code.h--PyCodeObject
+  # codeobject.c--PyCode_Type
+  PyObject_NEW(PyCodeObject, &amp;PyCode_Type)</code></pre>
+  </article>
+  <!-- post_content -->
+
+  <div class="prev_next_posts_block">
+    <div>
+      <span class="prev_post_prompt">Previous Post: </span><a class="prev_post_link" href="/blog/reposts/java-gc-resources">Java GC resources</a><span class="prev_post_date">(2019.10.31)</span>
+    </div>
+    <div>
+      <span class="next_post_prompt">First Post: </span><a class="next_post_link" href="/blog/posts/aoikwinwhich-which-program-implemented-in-various-languages">AoikWinWhich - which program implemented in various languages</a><span class="next_post_date">(2018.04.22)</span>
+    </div>
+  </div>
+
+  <!-- Special syntax below is for Vue rendering on the client side -->
+  <div v-cloak id="post_comments_block" class="post_comments_block">
+    <p class="title">Comments:</p>
+    <div class="write_comment_block">
+      <div class="comment_info_block">
+        <input v-model="commenter_name" class="commenter_name" placeholder="Your name"></input>
+        <div class="replyto_block">
+          <span>Reply to:</span>
+          <select v-model="replyto_comment_id">
+             <!-- `0` is a special value meaning no replyto -->
+             <option disabled value="0"></option>
+             <option v-for="comment_id in comment_ids" :value="comment_id">{{comment_id}}</option>
+          </select>
+        </div>
+      </div>
+      <textarea v-model="comment_content" class="comment_content" placeholder="Comment"></textarea>
+      <div><input v-on:click="comment_submit_button_on_click" class="submit_button" type="button" value="Submit"></input></div>
+    </div>
+    <ul>
+        <li v-for="comment_info in comment_infos" v-bind:class="comment_info.is_admin ? 'is_admin' : ''">
+            <a v-bind:id="'comment-' + comment_info.comment_id"
+              v-bind:href="'#comment-' + comment_info.comment_id" class="comment_id">{{comment_info.comment_id}}</a>
+            <div class="comment_content">{{comment_info.comment_content}}</div>
+            <div class="comment_info">
+              <span class="commenter_name">{{comment_info.commenter_name}}</span>
+              <span class="create_time">{{comment_info.create_time}}</span>
+              <template v-if="comment_info.replyto_comment_id > 0">
+              <span>to <a v-bind:href="'#comment-' + comment_info.replyto_comment_id">comment-{{comment_info.replyto_comment_id}}</a></span>
+              </template>
+              <a v-bind:data-comment-id="comment_info.comment_id" v-on:click="comment_reply_button_on_click" class="reply_button" href="#post_comments_block">Reply to this</a>
+            </div>
+        </li>
+    </ul>
+  </div>
+  
+
+  <!-- post_toc -->
+  <div id="post_toc_block" class="post_toc_block is_hidden">
+    <a v-on:click="post_toc_hide_link_on_click" data-shown-text="Hide" data-hidden-text="TOC" class="hide_link" href="javascript:void(0)">TOC</a>
+    <span class="title">Contents</span>
+  </div>
+  <!-- post_toc -->
+
+  <!-- back_to_top -->
+  <div id="back_to_top_block" class="back_to_top_block is_hidden">
+    <a v-on:click="back_to_top_button_on_click">
+      <div class="arrow_shape">
+        <div class="arrow_head"></div>
+        <div class="arrow_body"></div>
+      </div>
+    </a>
+  </div>
+  <!-- back_to_top -->
+
+  <div id="post_id" style="display: none;">52</div>
+  <!-- main_inner -->
+</main>
+<!-- main -->
+
+<!-- back_to_top -->
+
+<!-- footer -->
+<footer>
+  <!-- footer_inner -->
+  <span>This blog is powered by my own project <a href="https://github.com/AoiKuiyuyou/AoikSeldomStaticSite">AoikSeldomStaticSite</a>.</span>
+  <!-- footer_inner -->
+</footer>
+<!-- footer -->
+
+<!-- bottom_scripts -->
+
+<script type="text/javascript" src="/blog/libs_outer/jquery/3.3.1/jquery.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/vue/2.5.16/vue.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/toastr/2.1.3/toastr.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/highlight/9.12.0/highlight.min.js"></script>
+<script type="text/javascript" src="/blog/libs_inner/base/post.js"></script>
+<!-- bottom_scripts -->
+
+</div>
+<!-- vue_app -->
+
+</body>
+</html>
