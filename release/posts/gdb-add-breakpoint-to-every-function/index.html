@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- head -->
+<head>
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-117972998-1"></script>
+  <script>
+    var hostname = window.location.hostname;
+    if (hostname && hostname !== '127.0.0.1' && hostname !== 'localhost' && hostname !== 'aoik.me.local') {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-117972998-1');
+    }
+  </script>
+  <!-- Google Analytics -->
+
+  <!-- head_meta -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <!-- head_meta -->
+
+  <!-- head_title -->
+  <title>GDB add breakpoint to every function</title>
+  <!-- head_title -->
+
+  <!-- head_links -->
+  <link rel="stylesheet" href="/blog/libs_outer/bootstrap/4.0.0/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/blog/libs_outer/github-markdown-css/2.10.0/github-markdown.css">
+  <link rel="stylesheet" href="/blog/libs_inner/base/base.css">
+  <!-- head_links -->
+
+  <!-- head_links2 -->
+
+<link rel="stylesheet" href="/blog/libs_outer/toastr/2.1.3/toastr.min.css">
+<link rel="stylesheet" href="/blog/libs_outer/highlight/9.12.0/highlight.min.css">
+  <!-- head_links2 -->
+
+  <!-- head_styles -->
+  <!-- head_styles -->
+</head>
+<!-- head -->
+
+<body>
+<div id="vue_app">
+
+<!-- header -->
+<header>
+  <!-- header_inner -->
+  <!-- logo -->
+  <a class="logo_block" href="/blog"><span class="logo_text">Aoik</span></a>
+  <!-- nav -->
+  <nav class="nav_block">
+    <div class="nav_table">
+      <a class="current" href="/blog/posts"><span>Posts</span></a>
+      <a class="" href="/blog/reposts"><span>Reposts</span></a>
+      <a class="" href="/blog/tags"><span>Tags</span></a>
+      <a target="_blank" href="https://github.com/AoiKuiyuyou/Aoik/blob/master/README.md"><span>Github</span></a>
+      <a target="_blank" href="http://aoikuiyuyou.github.io/me.html"><span>Resume</span></a>
+    </div>
+  </nav>
+  <!-- header_inner -->
+</header>
+<!-- header -->
+
+<!-- main -->
+<main>
+  <!-- main_inner -->
+  
+  <!-- breadcrumbs -->
+  <div class="breadcrumbs_block">
+    <a href="/blog">Home</a>
+    <span class="sep">&gt;</span>
+    <a href="/blog/posts">Posts</a>
+    <span class="sep">&gt;</span>
+    <a href="">This</a>
+  </div>
+  <!-- breadcrumbs -->
+
+
+
+  <!-- post_info -->
+  <div class="post_info_block">
+    <div class="tags_block">
+    <a class="tag" href="/blog/tags/gdb">gdb</a>
+    </div>
+    <div class="fields_block">
+      <span class="author">Aoik,</span>
+      <span class="create_time">2019.08.21</span>
+    </div>
+  </div>
+  <!-- post_info -->
+
+  <!-- post_content -->
+  <!-- `v-pre` aims to skip Vue parsing -->
+  <article v-pre class="post_content_block markdown-body">
+  <h1 id="gdb-add-breakpoint-to-every-function">GDB add breakpoint to every function</h1><p><strong>AddBreakpointToEveryFunction.py</strong>:</p>
+<pre><code># Modified from https://blog.0x972.info/?d=2017/02/10/08/25/23-gdb-please-set-a-breakpoint-on-all-my-functions
+
+
+import gdb
+
+
+def get_file_addresses():
+    sources = gdb.execute(&#39;info sources&#39;, to_string=True).split(&#39;\n&#39;)
+    assert &#39;Source files for which symbols have been read in&#39; in sources[0]
+
+    for line in sources:
+        if line.startswith(&#39;Source files &#39;) or not line.strip():
+            continue
+
+        for source in line.split(&#39;, &#39;):
+            try:
+                # fails if source is a header file
+                bpt_msg = gdb.execute(&#39;break {}:1&#39;.format(source), to_string=True)
+            except gdb.error as e:
+                # if show breakpoint pending ==&gt; off
+                continue
+
+            bp_id = bpt_msg.partition(&#39;Breakpoint &#39;)[-1].partition(&#39; &#39;)[0]
+            gdb.execute(&#39;delete {}&#39;.format(bp_id), to_string=True)
+
+            if &#39;pending&#39; in bpt_msg or &#39;No line&#39; in bpt_msg:
+                # if show breakpoint pending ==&gt; on
+                &quot;&quot;&quot;No line 1 in file &quot;/usr/include/bits/pthreadtypes.h&quot;.
+                Breakpoint 8 (/usr/include/bits/pthreadtypes.h:1) pending.&quot;&quot;&quot;
+                continue
+
+            &quot;&quot;&quot;Note: breakpoint 3 also set at pc 0x400a57.
+            Breakpoint 4 at 0x400a57: file chopsticks.c, line 1.&quot;&quot;&quot;
+
+            bp_line = [a for a in bpt_msg.split(&#39;\n&#39;) if a.startswith(&#39;Breakpoint &#39;)][0]
+            file_1st_addr = int(bp_line.split(&#39; &#39;)[3][:-1], 16)
+
+            yield source, file_1st_addr
+
+
+def get_all_functions_from_pc(pc):
+    block = gdb.block_for_pc(pc)
+    for symb in block.global_block:
+        if not symb.is_function: continue
+
+        yield symb
+
+
+def set_trace_bpt_on_all_symbols():
+    for source, pc in get_file_addresses():
+        print(&#39;{} ==&gt; {}&#39;.format(source, hex(pc)))
+        for fct_symb in get_all_functions_from_pc(pc):
+            bpt = TraceBreakpoint(fct_symb)
+            print(&#39;\t{} (Bpt #{})&#39;.format(fct_symb, bpt.number))
+
+
+class TraceBreakpoint(gdb.Breakpoint):
+    def __init__(self, symb):
+        addr = long(symb.value().address.cast(gdb.lookup_type(&#39;long&#39;)))
+        gdb.Breakpoint.__init__(self, &#39;*{}&#39;.format(hex(addr)))
+
+    def stop(self):
+        caller = gdb.newest_frame().older()
+        caller_name = caller.name() if caller else &#39;none&#39;
+        print(&#39;T{};{};{}&#39;.format(gdb.selected_thread().num, caller_name, gdb.newest_frame().name()))
+
+        return False
+
+
+if __name__ == &#39;__main__&#39;:
+    set_trace_bpt_on_all_symbols()</code></pre>
+  </article>
+  <!-- post_content -->
+
+  <div class="prev_next_posts_block">
+    <div>
+      <span class="prev_post_prompt">Previous Post: </span><a class="prev_post_link" href="/blog/posts/gdb-step-over-instruction-by-breakpoint">GDB step over instruction by breakpoint</a><span class="prev_post_date">(2019.08.21)</span>
+    </div>
+    <div>
+      <span class="next_post_prompt">Next Post: </span><a class="next_post_link" href="/blog/posts/git-auto-deploy-latest-commit">Git auto deploy latest commit</a><span class="next_post_date">(2019.08.24)</span>
+    </div>
+  </div>
+
+  <!-- Special syntax below is for Vue rendering on the client side -->
+  <div v-cloak id="post_comments_block" class="post_comments_block">
+    <p class="title">Comments:</p>
+    <div class="write_comment_block">
+      <div class="comment_info_block">
+        <input v-model="commenter_name" class="commenter_name" placeholder="Your name"></input>
+        <div class="replyto_block">
+          <span>Reply to:</span>
+          <select v-model="replyto_comment_id">
+             <!-- `0` is a special value meaning no replyto -->
+             <option disabled value="0"></option>
+             <option v-for="comment_id in comment_ids" :value="comment_id">{{comment_id}}</option>
+          </select>
+        </div>
+      </div>
+      <textarea v-model="comment_content" class="comment_content" placeholder="Comment"></textarea>
+      <div><input v-on:click="comment_submit_button_on_click" class="submit_button" type="button" value="Submit"></input></div>
+    </div>
+    <ul>
+        <li v-for="comment_info in comment_infos" v-bind:class="comment_info.is_admin ? 'is_admin' : ''">
+            <a v-bind:id="'comment-' + comment_info.comment_id"
+              v-bind:href="'#comment-' + comment_info.comment_id" class="comment_id">{{comment_info.comment_id}}</a>
+            <div class="comment_content">{{comment_info.comment_content}}</div>
+            <div class="comment_info">
+              <span class="commenter_name">{{comment_info.commenter_name}}</span>
+              <span class="create_time">{{comment_info.create_time}}</span>
+              <template v-if="comment_info.replyto_comment_id > 0">
+              <span>to <a v-bind:href="'#comment-' + comment_info.replyto_comment_id">comment-{{comment_info.replyto_comment_id}}</a></span>
+              </template>
+              <a v-bind:data-comment-id="comment_info.comment_id" v-on:click="comment_reply_button_on_click" class="reply_button" href="#post_comments_block">Reply to this</a>
+            </div>
+        </li>
+    </ul>
+  </div>
+  
+
+  <!-- post_toc -->
+  <div id="post_toc_block" class="post_toc_block is_hidden">
+    <a v-on:click="post_toc_hide_link_on_click" data-shown-text="Hide" data-hidden-text="TOC" class="hide_link" href="javascript:void(0)">TOC</a>
+    <span class="title">Contents</span>
+  </div>
+  <!-- post_toc -->
+
+  <!-- back_to_top -->
+  <div id="back_to_top_block" class="back_to_top_block is_hidden">
+    <a v-on:click="back_to_top_button_on_click">
+      <div class="arrow_shape">
+        <div class="arrow_head"></div>
+        <div class="arrow_body"></div>
+      </div>
+    </a>
+  </div>
+  <!-- back_to_top -->
+
+  <div id="post_id" style="display: none;">40</div>
+  <!-- main_inner -->
+</main>
+<!-- main -->
+
+<!-- back_to_top -->
+
+<!-- footer -->
+<footer>
+  <!-- footer_inner -->
+  <span>This blog is powered by my own project <a href="https://github.com/AoiKuiyuyou/AoikSeldomStaticSite">AoikSeldomStaticSite</a>.</span>
+  <!-- footer_inner -->
+</footer>
+<!-- footer -->
+
+<!-- bottom_scripts -->
+
+<script type="text/javascript" src="/blog/libs_outer/jquery/3.3.1/jquery.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/vue/2.5.16/vue.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/toastr/2.1.3/toastr.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/highlight/9.12.0/highlight.min.js"></script>
+<script type="text/javascript" src="/blog/libs_inner/base/post.js"></script>
+<!-- bottom_scripts -->
+
+</div>
+<!-- vue_app -->
+
+</body>
+</html>

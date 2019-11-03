@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- head -->
+<head>
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-117972998-1"></script>
+  <script>
+    var hostname = window.location.hostname;
+    if (hostname && hostname !== '127.0.0.1' && hostname !== 'localhost' && hostname !== 'aoik.me.local') {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-117972998-1');
+    }
+  </script>
+  <!-- Google Analytics -->
+
+  <!-- head_meta -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <!-- head_meta -->
+
+  <!-- head_title -->
+  <title>Lua execution flow</title>
+  <!-- head_title -->
+
+  <!-- head_links -->
+  <link rel="stylesheet" href="/blog/libs_outer/bootstrap/4.0.0/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/blog/libs_outer/github-markdown-css/2.10.0/github-markdown.css">
+  <link rel="stylesheet" href="/blog/libs_inner/base/base.css">
+  <!-- head_links -->
+
+  <!-- head_links2 -->
+<link rel="stylesheet" href="/blog/libs_outer/toastr/2.1.3/toastr.min.css">
+  <!-- head_links2 -->
+
+  <!-- head_styles -->
+  <!-- head_styles -->
+</head>
+<!-- head -->
+
+<body>
+<div id="vue_app">
+
+<!-- header -->
+<header>
+  <!-- header_inner -->
+  <!-- logo -->
+  <a class="logo_block" href="/blog"><span class="logo_text">Aoik</span></a>
+  <!-- nav -->
+  <nav class="nav_block">
+    <div class="nav_table">
+      <a class="current" href="/blog/posts"><span>Posts</span></a>
+      <a class="" href="/blog/reposts"><span>Reposts</span></a>
+      <a class="" href="/blog/tags"><span>Tags</span></a>
+      <a target="_blank" href="https://github.com/AoiKuiyuyou/Aoik/blob/master/README.md"><span>Github</span></a>
+      <a target="_blank" href="http://aoikuiyuyou.github.io/me.html"><span>Resume</span></a>
+    </div>
+  </nav>
+  <!-- header_inner -->
+</header>
+<!-- header -->
+
+<!-- main -->
+<main>
+  <!-- main_inner -->
+  
+  <!-- breadcrumbs -->
+  <div class="breadcrumbs_block">
+    <a href="/blog">Home</a>
+    <span class="sep">&gt;</span>
+    <a href="/blog/posts">Posts</a>
+    <span class="sep">&gt;</span>
+    <a href="">This</a>
+  </div>
+  <!-- breadcrumbs -->
+
+
+
+  <!-- post_info -->
+  <div class="post_info_block">
+    <div class="tags_block">
+    <a class="tag" href="/blog/tags/lua">lua</a>
+    <a class="tag" href="/blog/tags/execution-flow">execution-flow</a>
+    <a class="tag" href="/blog/tags/source-code-study">source-code-study</a>
+    <a class="tag" href="/blog/tags/吸星大法强吃源码">吸星大法强吃源码</a>
+    </div>
+    <div class="fields_block">
+      <span class="author">Aoik,</span>
+      <span class="create_time">2019.03.22</span>
+    </div>
+  </div>
+  <!-- post_info -->
+
+  <!-- post_content -->
+  <!-- `v-pre` aims to skip Vue parsing -->
+  <article v-pre class="post_content_block markdown-body">
+  <h1 id="lua-execution-flow">Lua execution flow</h1><p>Lua version 5.3.5.</p>
+<pre><code>lua.c--main
+
+  lauxlib.c--luaL_newstate
+
+    lstate.c--lua_newstate
+    # Create lua_State and global_State.
+
+      lstate.c--preinit_thread
+
+      ldo.c--luaD_rawrunprotected...(2LSGL)
+      # Store `L-&gt;nCcalls`, `L-&gt;errorJmp` before call, and restore afterwards.
+      # Point `L-&gt;errorJmp` to a local lua_longjmp struct.
+      # Call given function, `f_luaopen` in this case.
+      # Return the error code in `L-&gt;errorJmp.status`.
+
+        lstate.c--f_luaopen
+        # Initialize the lua_State
+
+          lstate.c--stack_init
+          # Init `lua_State-&gt;stack`
+          # Init `lua_State-&gt;ci`
+          # Use `lua_State-&gt;base_ci` as `lua_State-&gt;ci`.
+
+          lstate.c--init_registry
+          # Initialize the lua_State&#39;s registry table
+
+            ltable.c--luaH_new
+            # Create table object
+
+              lgc.c--luaC_newobj
+              # Create GCObject object and add to `allgc` list
+
+                lmem.h--luaM_newobject
+
+                  lmem.c--luaM_realloc_
+                  # Allocate memory block.
+
+              ltable.c--setnodevector
+
+            ltable.c--luaH_resize
+
+            ltable.c--luaH_setint
+
+          lstring.c--luaS_init
+          # Initialize the lua_State&#39;s string table and the string cache.
+
+            lstring.c--luaS_resize
+            # Resize the lua_State&#39;s string table to initial size (128).
+
+              lmem.h--luaM_reallocvector
+
+                lmem.h--luaM_reallocv
+
+                  lmem.c--luaM_realloc_
+
+          lstring.c--luaT_init
+          # Initialize the lua_State&#39;s tagged method names array.
+
+          llex.c--luaX_init
+          # Create reserved words strings in cache.
+
+        # ===== lstate.c--f_luaopen =====
+
+      # ===== ldo.c--luaD_rawrunprotected =====
+
+    # ===== lstate.c--lua_newstate =====
+
+    lapi.c--lua_atpanic
+    # Set global state&#39;s panic function.
+
+  # ===== lauxlib.c--luaL_newstate =====
+
+  lua.h--lua_pushcfunction (macro)
+  # Push `pmain` to stack.
+
+    lapi.c--lua_pushcclosure
+
+  lapi.c--lua_pushinteger
+  # Push `argc` to stack.
+
+  lapi.c--lua_pushlightuserdata
+  # Push `argv` to stack.
+
+  lua.h--lua_pcall
+
+    lapi.c--lua_pcallk
+    # The target function `pmain` to call and its arguments are expected to be
+    # pushed on stack. Call `f_call`, which in turn calls the target function
+    # `pmain`.
+
+      ldo.c--luaD_pcall
+      # Store `L-&gt;ci`, `L-&gt;allowhook`, `L-&gt;nny`, `L-&gt;errfunc` before call
+      # `luaD_rawrunprotected`, which in turn calls given function.
+      # If the status returned by `luaD_rawrunprotected` is not 0, restore
+      # `L-&gt;ci`, `L-&gt;allowhook`, `L-&gt;nny`. Call `seterrorobj` to set error
+      # message on `L-&gt;top - 1` to old stack top given.
+      # Restore `L-&gt;errfunc`.
+
+        ldo.c--luaD_rawrunprotected...(2LSGL)
+
+          lua.c--pmain...(5MWJ5)
+
+      # OR
+
+      ldo.c--luaD_call...(60ZE7)
+      # Call the function described in `L-&gt;ci`.
+
+  lstate.c--lua_close
+# ===== lua.c--main =====
+
+
+# 2LSGL
+ldo.c--luaD_rawrunprotected
+
+  ldo.c--LUAI_TRY
+  # `LUAI_TRY` calls `setjmp` to save current execution context to
+  # `L-&gt;errorJmp-&gt;b` and then calls `(*f)(L, ud)`,
+  # In case of error, execution can call `longjmp` with `L-&gt;errorJmp-&gt;b` to
+  # jump back.
+
+    lapi.c--f_call
+
+      ldo.c--luaD_callnoyield
+
+        ldo.c--luaD_call...(60ZE7)
+# ===== ldo.c--luaD_rawrunprotected =====
+
+
+# 60ZE7
+ldo.c--luaD_call
+
+  ldo.c--luaD_precall
+  # If the function to call is a C closure or light C function,
+  # call it. If it is a Lua function, leave it to `luaV_execute`.
+
+    ldo.c--next_ci
+
+    ldo.c--luaD_hook
+
+    ldo.c--luaD_poscall
+
+      ldo.c--moveresults
+
+    # OR
+
+    ldo.c--adjust_varargs
+
+  lvm.c--luaV_execute (3UH1T)
+  # Execute VM instructions.
+# ===== ldo.c--luaD_call =====
+
+
+# 5MWJ5
+lua.c--pmain
+
+  lua.c--collectargs
+
+  linit.c--luaL_openlibs
+  # Open standard libraries.
+
+  lua.c--createargtable
+
+    lapi.c--lua_createtable
+
+      ltable.c--luaH_resize
+
+    # 25GPR
+    # Set global value `arg`.
+
+  lua.c--handle_script
+
+    lauxlib.h--luaL_loadfile
+
+      lauxlib.c--luaL_loadfilex
+
+        lapi.c--lua_load
+
+          ldo.c--luaD_protectedparser
+
+            ldo.c--luaD_pcall
+
+              ldo.c--f_parser...(2OAT3)
+
+          # At this point, the entry function is on stack at `L-&gt;top - 1`.
+
+          # Set globals table as the first upvalue of the entry function.
+
+    lua.c--pushargs
+    # Push command line arguments to stack.
+    # Return the number of command line arguments.
+
+    lua.c--docall
+      # Insert `msghandler` before the functon to be called.
+      # Use it as error function.
+
+      # Register signal handler `laction`.
+
+      lua.h--lua_pcall...
+      # Use `msghandler` as error function.
+
+        # Go with the branch at 33NSM
+        ldo.c--luaD_call...(60ZE7)
+
+      # Restore default signal handler.
+# ===== lua.c--pmain =====
+
+
+# 2OAT3
+ldo.c--f_parser
+
+  lundump.c--luaU_undump
+  # Parse bytecode to create Lua main function.
+
+    lfunc.c--luaF_newLclosure
+
+    lfunc.c--luaF_newproto
+
+  # OR
+
+  lparser.c--luaY_parser
+  # Parse source code to create Lua main function.
+    &quot;&quot;&quot;
+    LexState lexstate;
+
+    FuncState funcstate;
+    &quot;&quot;&quot;
+
+    lfunc.c--luaF_newLclosure
+      &quot;&quot;&quot;
+      funcstate.f = cl-&gt;p = luaF_newproto(L);
+
+      lexstate.buff = buff;
+
+      lexstate.dyd = dyd;
+
+      dyd-&gt;actvar.n = dyd-&gt;gt.n = dyd-&gt;label.n = 0;
+      &quot;&quot;&quot;
+
+    # The Lua main function is set to stack top.
+    &quot;&quot;&quot;
+    LClosure *cl = luaF_newLclosure(L, 1);  /* create main closure */
+    setclLvalue(L, L-&gt;top, cl);  /* anchor it (to avoid being collected) */
+    &quot;&quot;&quot;
+
+    llex.c--luaX_setinput
+      &quot;&quot;&quot;
+      ls-&gt;envn = luaS_newliteral(L, LUA_ENV);
+      &quot;&quot;&quot;
+
+    lparser.c--mainfunc
+      &quot;&quot;&quot;
+      BlockCnt bl;
+
+      expdesc v
+      &quot;&quot;&quot;
+
+      lparser.c--open_func
+      # Initialize `FuncState fs`.
+
+      # Main function is vararg
+      &quot;&quot;&quot;
+      fs-&gt;f-&gt;is_vararg = 1;
+      &quot;&quot;&quot;
+
+      lparser.c--init_exp
+      # Initialize `expdesc v`.
+
+      lparser.c--newupvalue
+        &quot;&quot;&quot;
+        newupvalue(fs, ls-&gt;envn, &amp;v)
+        &quot;&quot;&quot;
+
+      llex.c--luaX_next
+
+        llex.c--llex
+
+          llex.c--next
+
+      lparser.c--statlist...(1TRNE)
+      # Parse statements.
+# ===== ldo.c--f_parser =====</code></pre>
+  </article>
+  <!-- post_content -->
+
+  <div class="prev_next_posts_block">
+    <div>
+      <span class="prev_post_prompt">Previous Post: </span><a class="prev_post_link" href="/blog/posts/lua-compile-and-embed-in-windows">Lua compile and embed in Windows</a><span class="prev_post_date">(2019.03.21)</span>
+    </div>
+    <div>
+      <span class="next_post_prompt">Next Post: </span><a class="next_post_link" href="/blog/posts/mysql-find-what-statement-is-causing-a-lock">MySQL find what statement is causing a lock</a><span class="next_post_date">(2019.03.23)</span>
+    </div>
+  </div>
+
+  <!-- Special syntax below is for Vue rendering on the client side -->
+  <div v-cloak id="post_comments_block" class="post_comments_block">
+    <p class="title">Comments:</p>
+    <div class="write_comment_block">
+      <div class="comment_info_block">
+        <input v-model="commenter_name" class="commenter_name" placeholder="Your name"></input>
+        <div class="replyto_block">
+          <span>Reply to:</span>
+          <select v-model="replyto_comment_id">
+             <!-- `0` is a special value meaning no replyto -->
+             <option disabled value="0"></option>
+             <option v-for="comment_id in comment_ids" :value="comment_id">{{comment_id}}</option>
+          </select>
+        </div>
+      </div>
+      <textarea v-model="comment_content" class="comment_content" placeholder="Comment"></textarea>
+      <div><input v-on:click="comment_submit_button_on_click" class="submit_button" type="button" value="Submit"></input></div>
+    </div>
+    <ul>
+        <li v-for="comment_info in comment_infos" v-bind:class="comment_info.is_admin ? 'is_admin' : ''">
+            <a v-bind:id="'comment-' + comment_info.comment_id"
+              v-bind:href="'#comment-' + comment_info.comment_id" class="comment_id">{{comment_info.comment_id}}</a>
+            <div class="comment_content">{{comment_info.comment_content}}</div>
+            <div class="comment_info">
+              <span class="commenter_name">{{comment_info.commenter_name}}</span>
+              <span class="create_time">{{comment_info.create_time}}</span>
+              <template v-if="comment_info.replyto_comment_id > 0">
+              <span>to <a v-bind:href="'#comment-' + comment_info.replyto_comment_id">comment-{{comment_info.replyto_comment_id}}</a></span>
+              </template>
+              <a v-bind:data-comment-id="comment_info.comment_id" v-on:click="comment_reply_button_on_click" class="reply_button" href="#post_comments_block">Reply to this</a>
+            </div>
+        </li>
+    </ul>
+  </div>
+  
+
+  <!-- post_toc -->
+  <div id="post_toc_block" class="post_toc_block is_hidden">
+    <a v-on:click="post_toc_hide_link_on_click" data-shown-text="Hide" data-hidden-text="TOC" class="hide_link" href="javascript:void(0)">TOC</a>
+    <span class="title">Contents</span>
+  </div>
+  <!-- post_toc -->
+
+  <!-- back_to_top -->
+  <div id="back_to_top_block" class="back_to_top_block is_hidden">
+    <a v-on:click="back_to_top_button_on_click">
+      <div class="arrow_shape">
+        <div class="arrow_head"></div>
+        <div class="arrow_body"></div>
+      </div>
+    </a>
+  </div>
+  <!-- back_to_top -->
+
+  <div id="post_id" style="display: none;">14</div>
+  <!-- main_inner -->
+</main>
+<!-- main -->
+
+<!-- back_to_top -->
+
+<!-- footer -->
+<footer>
+  <!-- footer_inner -->
+  <span>This blog is powered by my own project <a href="https://github.com/AoiKuiyuyou/AoikSeldomStaticSite">AoikSeldomStaticSite</a>.</span>
+  <!-- footer_inner -->
+</footer>
+<!-- footer -->
+
+<!-- bottom_scripts -->
+
+<script type="text/javascript" src="/blog/libs_outer/jquery/3.3.1/jquery.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/vue/2.5.16/vue.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/toastr/2.1.3/toastr.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/highlight/9.12.0/highlight.min.js"></script>
+<script type="text/javascript" src="/blog/libs_inner/base/post.js"></script>
+<!-- bottom_scripts -->
+
+</div>
+<!-- vue_app -->
+
+</body>
+</html>

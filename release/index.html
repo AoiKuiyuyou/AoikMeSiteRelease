@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- head -->
+<head>
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-117972998-1"></script>
+  <script>
+    var hostname = window.location.hostname;
+    if (hostname && hostname !== '127.0.0.1' && hostname !== 'localhost' && hostname !== 'aoik.me.local') {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-117972998-1');
+    }
+  </script>
+  <!-- Google Analytics -->
+
+  <!-- head_meta -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <!-- head_meta -->
+
+  <!-- head_title -->
+  <title>Aoik</title>
+  <!-- head_title -->
+
+  <!-- head_links -->
+  <link rel="stylesheet" href="/blog/libs_outer/bootstrap/4.0.0/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/blog/libs_outer/github-markdown-css/2.10.0/github-markdown.css">
+  <link rel="stylesheet" href="/blog/libs_inner/base/base.css">
+  <!-- head_links -->
+
+  <!-- head_links2 -->
+  <!-- head_links2 -->
+
+  <!-- head_styles -->
+
+<style type="text/css">
+</style>
+  <!-- head_styles -->
+</head>
+<!-- head -->
+
+<body>
+<div id="vue_app">
+
+<!-- header -->
+<header>
+  <!-- header_inner -->
+  <!-- logo -->
+  <a class="logo_block" href="/blog"><span class="logo_text">Aoik</span></a>
+  <!-- nav -->
+  <nav class="nav_block">
+    <div class="nav_table">
+      <a class="" href="/blog/posts"><span>Posts</span></a>
+      <a class="" href="/blog/reposts"><span>Reposts</span></a>
+      <a class="" href="/blog/tags"><span>Tags</span></a>
+      <a target="_blank" href="https://github.com/AoiKuiyuyou/Aoik/blob/master/README.md"><span>Github</span></a>
+      <a target="_blank" href="http://aoikuiyuyou.github.io/me.html"><span>Resume</span></a>
+    </div>
+  </nav>
+  <!-- header_inner -->
+</header>
+<!-- header -->
+
+<!-- main -->
+<main>
+  <!-- main_inner -->
+<div id="tag_cloud_upper" class="tag_cloud_upper"></div>
+  <!-- main_inner -->
+</main>
+<!-- main -->
+
+<!-- back_to_top -->
+
+<!-- footer -->
+<footer>
+  <!-- footer_inner -->
+  <span>This blog is powered by my own project <a href="https://github.com/AoiKuiyuyou/AoikSeldomStaticSite">AoikSeldomStaticSite</a>.</span>
+  <!-- footer_inner -->
+</footer>
+<!-- footer -->
+
+<!-- bottom_scripts -->
+<script type="text/javascript" src="/blog/libs_outer/jquery/3.3.1/jquery.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/jquery-svg3dtagcloud/jquery.svg3dtagcloud.min.js"></script>
+<script>
+$(document).ready(function() {
+    var entries = [
+        {label: 'python', url: '/blog/tags/python', target: '_blank'},
+        {label: 'which', url: '/blog/tags/which', target: '_blank'},
+        {label: 'bash', url: '/blog/tags/bash', target: '_blank'},
+        {label: 'batch', url: '/blog/tags/batch', target: '_blank'},
+        {label: 'c', url: '/blog/tags/c', target: '_blank'},
+        {label: 'ceylon', url: '/blog/tags/ceylon', target: '_blank'},
+        {label: 'clojure', url: '/blog/tags/clojure', target: '_blank'},
+        {label: 'coffeescript', url: '/blog/tags/coffeescript', target: '_blank'},
+        {label: 'cpp', url: '/blog/tags/cpp', target: '_blank'},
+        {label: 'cpp-cli', url: '/blog/tags/cpp-cli', target: '_blank'},
+        {label: 'csharp', url: '/blog/tags/csharp', target: '_blank'},
+        {label: 'd', url: '/blog/tags/d', target: '_blank'},
+        {label: 'dart', url: '/blog/tags/dart', target: '_blank'},
+        {label: 'eiffel', url: '/blog/tags/eiffel', target: '_blank'},
+        {label: 'erlang', url: '/blog/tags/erlang', target: '_blank'},
+        {label: 'fsharp', url: '/blog/tags/fsharp', target: '_blank'},
+        {label: 'go', url: '/blog/tags/go', target: '_blank'},
+        {label: 'groovy', url: '/blog/tags/groovy', target: '_blank'},
+        {label: 'haskell', url: '/blog/tags/haskell', target: '_blank'},
+        {label: 'hy', url: '/blog/tags/hy', target: '_blank'},
+        {label: 'java', url: '/blog/tags/java', target: '_blank'},
+        {label: 'javascript', url: '/blog/tags/javascript', target: '_blank'},
+        {label: 'julia', url: '/blog/tags/julia', target: '_blank'},
+        {label: 'kotlin', url: '/blog/tags/kotlin', target: '_blank'},
+        {label: 'lua', url: '/blog/tags/lua', target: '_blank'},
+        {label: 'ocaml', url: '/blog/tags/ocaml', target: '_blank'},
+        {label: 'pascal', url: '/blog/tags/pascal', target: '_blank'},
+        {label: 'perl', url: '/blog/tags/perl', target: '_blank'},
+        {label: 'php', url: '/blog/tags/php', target: '_blank'},
+        {label: 'ruby', url: '/blog/tags/ruby', target: '_blank'},
+        {label: 'rust', url: '/blog/tags/rust', target: '_blank'},
+        {label: 'scala', url: '/blog/tags/scala', target: '_blank'},
+        {label: 'scheme', url: '/blog/tags/scheme', target: '_blank'},
+        {label: 'tcl', url: '/blog/tags/tcl', target: '_blank'},
+        {label: 'vb.net', url: '/blog/tags/vb.net', target: '_blank'},
+        {label: 'xtend', url: '/blog/tags/xtend', target: '_blank'},
+        {label: 'gcc', url: '/blog/tags/gcc', target: '_blank'},
+        {label: 'variable-length-array', url: '/blog/tags/variable-length-array', target: '_blank'},
+        {label: 'flask', url: '/blog/tags/flask', target: '_blank'},
+        {label: 'freedos-source-code-study', url: '/blog/tags/freedos-source-code-study', target: '_blank'},
+        {label: 'operating-system-study', url: '/blog/tags/operating-system-study', target: '_blank'},
+        {label: 'boot-sector', url: '/blog/tags/boot-sector', target: '_blank'},
+        {label: '吸星大法强吃源码', url: '/blog/tags/吸星大法强吃源码', target: '_blank'},
+        {label: 'fdisk', url: '/blog/tags/fdisk', target: '_blank'},
+        {label: 'gdb', url: '/blog/tags/gdb', target: '_blank'},
+        {label: 'git', url: '/blog/tags/git', target: '_blank'},
+        {label: 'grub4dos-source-code-study', url: '/blog/tags/grub4dos-source-code-study', target: '_blank'},
+        {label: 'a20-gate', url: '/blog/tags/a20-gate', target: '_blank'},
+        {label: 'load-balancing', url: '/blog/tags/load-balancing', target: '_blank'},
+        {label: 'source-code-study', url: '/blog/tags/source-code-study', target: '_blank'},
+        {label: 'execution-flow', url: '/blog/tags/execution-flow', target: '_blank'},
+        {label: 'mysql', url: '/blog/tags/mysql', target: '_blank'},
+        {label: 'linux', url: '/blog/tags/linux', target: '_blank'},
+        {label: 'eclipse', url: '/blog/tags/eclipse', target: '_blank'},
+        {label: 'closure', url: '/blog/tags/closure', target: '_blank'},
+        {label: 'compiler', url: '/blog/tags/compiler', target: '_blank'},
+        {label: 'parser', url: '/blog/tags/parser', target: '_blank'},
+        {label: 'parser-generator', url: '/blog/tags/parser-generator', target: '_blank'},
+        {label: 'pgen', url: '/blog/tags/pgen', target: '_blank'},
+        {label: 'datetime', url: '/blog/tags/datetime', target: '_blank'},
+        {label: 'algorithm', url: '/blog/tags/algorithm', target: '_blank'},
+        {label: 'sysdig', url: '/blog/tags/sysdig', target: '_blank'},
+        {label: 'monitoring', url: '/blog/tags/monitoring', target: '_blank'},
+        {label: 'benchmarking', url: '/blog/tags/benchmarking', target: '_blank'},
+        {label: 'web-api', url: '/blog/tags/web-api', target: '_blank'},
+        {label: 'windows-installation', url: '/blog/tags/windows-installation', target: '_blank'},
+        {label: 'alibaba', url: '/blog/tags/alibaba', target: '_blank'},
+        {label: 'it-books', url: '/blog/tags/it-books', target: '_blank'},
+        {label: 'double-11', url: '/blog/tags/double-11', target: '_blank'},
+        {label: 'technology-introduction', url: '/blog/tags/technology-introduction', target: '_blank'},
+        {label: 'career-experience', url: '/blog/tags/career-experience', target: '_blank'},
+        {label: 'java-development-guidelines', url: '/blog/tags/java-development-guidelines', target: '_blank'},
+        {label: 'android-development-guidelines', url: '/blog/tags/android-development-guidelines', target: '_blank'},
+        {label: 'android-hotfix', url: '/blog/tags/android-hotfix', target: '_blank'},
+        {label: 'architecture', url: '/blog/tags/architecture', target: '_blank'},
+        {label: 'cpu', url: '/blog/tags/cpu', target: '_blank'},
+        {label: 'assembly', url: '/blog/tags/assembly', target: '_blank'},
+        {label: 'data-structure', url: '/blog/tags/data-structure', target: '_blank'},
+        {label: 'vlan', url: '/blog/tags/vlan', target: '_blank'},
+        {label: 'windows', url: '/blog/tags/windows', target: '_blank'},
+        {label: 'ios', url: '/blog/tags/ios', target: '_blank'},
+        {label: 'android', url: '/blog/tags/android', target: '_blank'},
+    ];
+
+    var settings = {
+        entries: entries,
+        width: 800,
+        height: 600,
+        radius: '85%',
+        radiusMin: 75,
+        bgDraw: false,
+        bgColor: '#EFEFEF',
+        opacityOver: 1.00,
+        opacityOut: 0.1,
+        opacitySpeed: 6,
+        fov: 800,
+        speed: 0.3,
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '20',
+        fontColor: '#0366d6',
+        fontWeight: 'normal',
+        fontStyle: 'normal',
+        fontStretch: 'normal',
+        fontToUpperCase: false,
+        tooltipFontFamily: 'Arial, sans-serif',
+        tooltipFontSize: '12',
+        tooltipFontColor: '#fff',
+        tooltipFontWeight: 'normal',
+        tooltipFontStyle: 'normal',
+        tooltipFontStretch: 'normal',
+        tooltipFontToUpperCase: false,
+        tooltipTextAnchor: 'left',
+        tooltipDiffX: 0,
+        tooltipDiffY: 10
+    };
+
+    $('#tag_cloud_upper').svg3DTagCloud(settings);
+});
+</script>
+<!-- bottom_scripts -->
+
+</div>
+<!-- vue_app -->
+
+</body>
+</html>

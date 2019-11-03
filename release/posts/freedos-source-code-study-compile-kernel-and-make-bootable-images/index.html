@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- head -->
+<head>
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-117972998-1"></script>
+  <script>
+    var hostname = window.location.hostname;
+    if (hostname && hostname !== '127.0.0.1' && hostname !== 'localhost' && hostname !== 'aoik.me.local') {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-117972998-1');
+    }
+  </script>
+  <!-- Google Analytics -->
+
+  <!-- head_meta -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <!-- head_meta -->
+
+  <!-- head_title -->
+  <title>FreeDOS source code study - compile kernel and make bootable images</title>
+  <!-- head_title -->
+
+  <!-- head_links -->
+  <link rel="stylesheet" href="/blog/libs_outer/bootstrap/4.0.0/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/blog/libs_outer/github-markdown-css/2.10.0/github-markdown.css">
+  <link rel="stylesheet" href="/blog/libs_inner/base/base.css">
+  <!-- head_links -->
+
+  <!-- head_links2 -->
+
+<link rel="stylesheet" href="/blog/libs_outer/toastr/2.1.3/toastr.min.css">
+<link rel="stylesheet" href="/blog/libs_outer/highlight/9.12.0/highlight.min.css">
+  <!-- head_links2 -->
+
+  <!-- head_styles -->
+  <!-- head_styles -->
+</head>
+<!-- head -->
+
+<body>
+<div id="vue_app">
+
+<!-- header -->
+<header>
+  <!-- header_inner -->
+  <!-- logo -->
+  <a class="logo_block" href="/blog"><span class="logo_text">Aoik</span></a>
+  <!-- nav -->
+  <nav class="nav_block">
+    <div class="nav_table">
+      <a class="current" href="/blog/posts"><span>Posts</span></a>
+      <a class="" href="/blog/reposts"><span>Reposts</span></a>
+      <a class="" href="/blog/tags"><span>Tags</span></a>
+      <a target="_blank" href="https://github.com/AoiKuiyuyou/Aoik/blob/master/README.md"><span>Github</span></a>
+      <a target="_blank" href="http://aoikuiyuyou.github.io/me.html"><span>Resume</span></a>
+    </div>
+  </nav>
+  <!-- header_inner -->
+</header>
+<!-- header -->
+
+<!-- main -->
+<main>
+  <!-- main_inner -->
+  
+  <!-- breadcrumbs -->
+  <div class="breadcrumbs_block">
+    <a href="/blog">Home</a>
+    <span class="sep">&gt;</span>
+    <a href="/blog/posts">Posts</a>
+    <span class="sep">&gt;</span>
+    <a href="">This</a>
+  </div>
+  <!-- breadcrumbs -->
+
+
+
+  <!-- post_info -->
+  <div class="post_info_block">
+    <div class="tags_block">
+    <a class="tag" href="/blog/tags/freedos-source-code-study">freedos-source-code-study</a>
+    <a class="tag" href="/blog/tags/operating-system-study">operating-system-study</a>
+    <a class="tag" href="/blog/tags/吸星大法强吃源码">吸星大法强吃源码</a>
+    </div>
+    <div class="fields_block">
+      <span class="author">Aoik,</span>
+      <span class="create_time">2019.07.30</span>
+    </div>
+  </div>
+  <!-- post_info -->
+
+  <!-- post_content -->
+  <!-- `v-pre` aims to skip Vue parsing -->
+  <article v-pre class="post_content_block markdown-body">
+  <h1 id="freedos-source-code-study-compile-kernel-and-make-bootable-images">FreeDOS source code study - compile kernel and make bootable images</h1><h2 id="compile-freedos-kernel-and-freecom"><a class="anchor" href="#compile-freedos-kernel-and-freecom"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Compile FreeDOS kernel and freecom</h2><h3 id="get-freedos-kernel-source-code"><a class="anchor" href="#get-freedos-kernel-source-code"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Get FreeDOS kernel source code</h3><p>Get FreeDOS kernel source code from <a href="https://github.com/FDOS/kernel/archive/9d5abfe25aeff1bdbe325d49bc2dcae493a351bb.zip">here</a>.</p>
+<p>Put the downloaded file to <code>D:\freedos_build\freedos_kernel.zip</code>.</p>
+<h3 id="get-freedos-freecom-source-code"><a class="anchor" href="#get-freedos-freecom-source-code"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Get FreeDOS freecom source code</h3><p>Get FreeDOS freecom source code from <a href="https://github.com/FDOS/freecom/archive/81535436f80343d7d111df381f2f9020bd1e3362.zip">here</a>.</p>
+<p>Put the downloaded file to <code>D:\freedos_build\freedos_freecom.zip</code>.</p>
+<h3 id="create-echoto-and-echolib-source-code"><a class="anchor" href="#create-echoto-and-echolib-source-code"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Create echoto and echolib source code</h3><p>The <code>echoto.bat</code> and <code>echolib.bat</code> programs that come with FreeDOS kernel and
+freecom source code somehow do not work correctly. We need to replace the two
+programs.</p>
+<p><br>Create <code>D:\freedos_build\echoto.c</code>:</p>
+<pre><code>#include &lt;stdio.h&gt;
+
+int main(int argc, char *argv[])
+{
+    FILE *file;
+    char* fileName;
+    int i;
+
+    if (argc &lt;= 1)
+    {
+        return 0;
+    }
+
+    fileName = argv[1];
+
+    file = fopen(fileName, &quot;a&quot;);
+
+    if (file == NULL) {
+        return 1;
+    }
+
+    for (i = 2; i &lt; argc; i++)
+    {
+        fprintf(file, &quot;%s &quot;, argv[i]);
+    }
+
+    fclose(file);
+
+    return 0;
+}</code></pre><p><br>Create <code>D:\freedos_build\echolib.c</code>:</p>
+<pre><code>#include &lt;stdio.h&gt;
+
+int main(int argc, char *argv[])
+{
+    FILE *file;
+    char* fileName;
+    int i;
+
+    if (argc &lt;= 1)
+    {
+        return 0;
+    }
+
+    fileName = argv[1];
+
+    file = fopen(fileName, &quot;a&quot;);
+
+    if (file == NULL) {
+        return 1;
+    }
+
+    for (i = 2; i &lt; argc; i++)
+    {
+        fprintf(file, &quot;%s &quot;, argv[i]);
+    }
+
+    fprintf(file, &quot;%s&quot;, &quot;&amp;&quot;);
+
+    fclose(file);
+
+    return 0;
+}</code></pre><h3 id="get-turbo-c-turbo-c-and-nasm"><a class="anchor" href="#get-turbo-c-turbo-c-and-nasm"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Get Turbo C Turbo C++ and NASM</h3><p>The author of <a href="https://www.youtube.com/watch?v=Uwk91x5KgPc">this kernel compiling process video</a> has provided an <a href="https://archive.org/download/FreeDOS1.2_2017_04_28/FreeDOS%201.2.zip">archive</a> that contains Turbo C 2.01, Turbo C++ 1.01 and NASM 0.98.</p>
+<p>Put the downloaded file to <code>D:\freedos_build\freedos_compilers.zip</code>.</p>
+<h3 id="get-winrar"><a class="anchor" href="#get-winrar"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Get WinRAR</h3><p>Download <code>WinRAR</code> from <a href="http://download.oldapps.com/Winrar/wrar380.exe">here</a>. The version matters because it will be installed in Windows 98.</p>
+<p>Put the downloaded file to <code>D:\freedos_build\winrar3.80.exe</code>.</p>
+<h3 id="run-windows-98-in-a-virtual-machine"><a class="anchor" href="#run-windows-98-in-a-virtual-machine"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Run Windows 98 in a virtual machine</h3><p>To build the FreeDOS kernel and freecom, a Windows 98 or Windows XP environment is needed.</p>
+<p>Download <code>VirtualBox</code> from <a href="https://download.virtualbox.org/virtualbox/6.0.10/VirtualBox-6.0.10-132072-Win.exe">here</a>.</p>
+<p>Download <code>Windows 98 SE VirtualBox hard disk image</code> from <a href="https://archive.org/details/Windows98vdi">here</a>.</p>
+<p>Set up a virtual machine in VirtualBox. Set the operating system to be <code>Windows 98</code>. Attach the downloaded hard disk image. Set the network adapter to be <code>Host-only adapter</code>.</p>
+<p>Start the virtual machine.</p>
+<h3 id="transfer-files-to-the-virtual-machine"><a class="anchor" href="#transfer-files-to-the-virtual-machine"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Transfer files to the virtual machine</h3><p>To transfer files to the Windows 98 virtual machine, we need to run an HTTP server on the host OS. <code>HFS</code> is a very easy to use HTTP server. Download <code>HFS</code> from <a href="https://sourceforge.net/projects/hfs/files/HFS/2.3k/hfs2.3k.zip/download">here</a>.</p>
+<p>Decompress the archive to <code>D:\freedos_build\hfs</code>. Run <code>D:\freedos_build\hfs\hfs.exe</code>.</p>
+<p>In menu <code>Menu - IP address</code>, select <code>192.168.56.1</code>. This is the IP of VirtualBox&#39;s host-only adapter on the host OS.</p>
+<p>Drag <code>D:\freedos_build\freedos_kernel.zip</code> to HFS, it should be available to download via URL <code>http://192.168.56.1/freedos_kernel.zip</code> (The port number may be different depending on whether port 80 was occupied when HFS starts up.).</p>
+<p>In the virtual machine, open the URL to download the file to <code>C:\freedos_build\freedos_kernel.zip</code>.</p>
+<p>Drag <code>D:\freedos_build\freedos_freecom.zip</code> to HFS. In the virtual machine, download it to  <code>C:\freedos_build\freedos_freecom.zip</code>.</p>
+<p>Drag <code>D:\freedos_build\echoto.c</code> to HFS. In the virtual machine, download it to  <code>C:\freedos_build\echoto.c</code>.</p>
+<p>Drag <code>D:\freedos_build\echolib.c</code> to HFS. In the virtual machine, download it to  <code>C:\freedos_build\echolib.c</code>.</p>
+<p>Drag <code>D:\freedos_build\freedos_compilers.zip</code> to HFS. In the virtual machine, download it to  <code>C:\freedos_build\freedos_compilers.zip</code>.</p>
+<p>Drag <code>D:\freedos_build\winrar3.80.exe</code> to HFS. In the virtual machine, download it to  <code>C:\freedos_build\winrar3.80.exe</code>.</p>
+<h3 id="install-winrar"><a class="anchor" href="#install-winrar"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Install WinRAR</h3><p>In the virtual machine, run <code>C:\freedos_build\winrar3.80.exe</code> to install WinRAR.</p>
+<h3 id="install-nasm"><a class="anchor" href="#install-nasm"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Install NASM</h3><p>In the virtual machine, decompress <code>C:\freedos_build\freedos_compilers.zip</code> to <code>C:\freedos_build\freedos_compilers_temp</code>.</p>
+<p>Move directory <code>C:\freedos_build\freedos_compilers_temp\FreeDOS 1.2</code> to <code>C:\freedos_build\freedos_compilers</code>.</p>
+<p>Remove <code>C:\freedos_build\freedos_compilers_temp</code>.</p>
+<p>Make sure file <code>C:\freedos_build\freedos_compilers\nasm098.exe</code> is there.</p>
+<h3 id="install-turbo-c"><a class="anchor" href="#install-turbo-c"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Install Turbo C</h3><p>In the command console, run:</p>
+<pre><code>cd C:\freedos_build\freedos_compilers\tc201inst
+
+install.exe</code></pre><p>In the prompt <code>Enter the SOURCE drive to use:</code>, enter <code>C</code>.</p>
+<p>In the prompt <code>Turbo C Directory:</code>, enter <code>C:\TC201</code>.</p>
+<p>In other prompts simply use default settings.</p>
+<h3 id="install-turbo-c-"><a class="anchor" href="#install-turbo-c-"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Install Turbo C++</h3><p>In the command console, run:</p>
+<pre><code>cd C:\freedos_build\freedos_compilers\tc101inst
+
+install.exe</code></pre><p>In the prompt <code>Enter the SOURCE drive to use:</code>, enter <code>C</code>.</p>
+<p>In the prompt <code>Turbo C++ Directory:</code>, enter <code>C:\TCPP</code>.</p>
+<p>In other prompts simply use default settings.</p>
+<h3 id="compile-echoto-and-echolib"><a class="anchor" href="#compile-echoto-and-echolib"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Compile echoto and echolib</h3><p>In the command console, run:</p>
+<pre><code>cd C:\freedos_build
+
+SET PATH=%PATH%;C:\tc201
+
+tcc -IC:\tc201\INCLUDE -LC:\tc201\LIB echoto.c
+
+tcc -IC:\tc201\INCLUDE -LC:\tc201\LIB echolib.c</code></pre><p>The result files are <code>C:\freedos_build\echoto.exe</code> and <code>C:\freedos_build\echolib.exe</code>.</p>
+<h3 id="compile-freedos-kernel"><a class="anchor" href="#compile-freedos-kernel"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Compile FreeDOS kernel</h3><p>Decompress <code>C:\freedos_build\freedos_kernel.zip</code> to <code>C:\freedos_build\freedos_kernel</code></p>
+<p>Rename <code>C:\freedos_build\freedos_kernel\utils\echoto.bat</code> to <code>C:\freedos_build\freedos_kernel\utils\echoto.bat.bak</code>.</p>
+<p>Copy <code>C:\freedos_build\echoto.exe</code> to <code>C:\freedos_build\freedos_kernel\utils\echoto.exe</code>.</p>
+<p><br>Edit <code>C:\freedos_build\freedos_kernel\kernek\makefile</code>, change</p>
+<pre><code>$(TARGET).lnk: turboc.cfg makefile ../mkfiles/generic.mak ../mkfiles/$(COMPILER).mak
+        -$(RM) *.lnk
+        $(ECHOTO) $(TARGET).lnk $(OBJS1)+
+        $(ECHOTO) $(TARGET).lnk $(OBJS2)+
+        $(ECHOTO) $(TARGET).lnk $(OBJS3)+
+        $(ECHOTO) $(TARGET).lnk $(OBJS4)+
+        $(ECHOTO) $(TARGET).lnk $(OBJS5)+
+        $(ECHOTO) $(TARGET).lnk $(OBJS6)+
+        $(ECHOTO) $(TARGET).lnk $(OBJS7)+
+        $(ECHOTO) $(TARGET).lnk $(OBJS8)
+        $(ECHOTO) $(TARGET).lnk kernel.exe
+        $(ECHOTO) $(TARGET).lnk kernel.map
+        $(ECHOTO) $(TARGET).lnk $(LIBS)</code></pre><p>to</p>
+<pre><code>$(TARGET).lnk: turboc.cfg makefile ../mkfiles/generic.mak ../mkfiles/$(COMPILER).mak
+        -$(RM) *.lnk
+        $(ECHOTO) $(TARGET).lnk $(OBJS1)+
+        $(ECHOTO) $(TARGET).lnk $(OBJS2)+
+        $(ECHOTO) $(TARGET).lnk $(OBJS3)+
+        $(ECHOTO) $(TARGET).lnk $(OBJS4)+
+        $(ECHOTO) $(TARGET).lnk $(OBJS5)+
+        $(ECHOTO) $(TARGET).lnk $(OBJS6)+
+        $(ECHOTO) $(TARGET).lnk $(OBJS7)+
+        $(ECHOTO) $(TARGET).lnk $(OBJS8)+
+        $(ECHOTO) $(TARGET).lnk , kernel.exe
+        $(ECHOTO) $(TARGET).lnk , kernel.map
+        $(ECHOTO) $(TARGET).lnk , $(LIBS)</code></pre><p>Notice the added one <code>+</code> and three <code>,</code>.</p>
+<p><br>Copy <code>C:\freedos_build\freedos_kernel\config.b</code> to <code>C:\freedos_build\freedos_kernel\config.bat</code>.</p>
+<p>Edit <code>C:\freedos_build\freedos_kernel\config.bat</code>:</p>
+<pre><code>set XNASM=nasm098.exe
+
+set COMPILER=TC2
+
+set TC2_BASE=c:\tc201
+
+set XLINK=tlink /m/c/s/l
+
+set PATH=%PATH%;%TC2_BASE%;C:\freedos_build\freedos_compilers
+
+set MAKE=%TC2_BASE%\make
+
+set XCPU=86
+
+set XFAT=32</code></pre><p>Comment out other variables.</p>
+<p><br>In the command console, run:</p>
+<pre><code>cd C:\freedos_build\freedos_kernel
+
+clobber.bat
+
+build.bat</code></pre><p><br>The result files are:</p>
+<ul>
+<li><code>C:\freedos_build\freedos_kernel\bin\country.sys</code></li>
+<li><code>C:\freedos_build\freedos_kernel\bin\kernel.sys</code></li>
+<li><code>C:\freedos_build\freedos_kernel\bin\ktc8632.map</code></li>
+<li><code>C:\freedos_build\freedos_kernel\bin\ktc8632.sys</code></li>
+<li><code>C:\freedos_build\freedos_kernel\bin\sys.com</code></li>
+<li><code>C:\freedos_build\freedos_kernel\boot\fat12com.bin</code></li>
+</ul>
+<p>The <code>C:\freedos_build\freedos_kernel\bin</code> directory also contains:</p>
+<ul>
+<li><code>C:\freedos_build\freedos_kernel\bin\autoexec.bat</code></li>
+<li><code>C:\freedos_build\freedos_kernel\bin\config.sys</code></li>
+<li><code>C:\freedos_build\freedos_kernel\bin\install.bat</code></li>
+</ul>
+<h3 id="compile-freedos-freecom"><a class="anchor" href="#compile-freedos-freecom"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Compile FreeDOS freecom</h3><p>Decompress <code>C:\freedos_build\freedos_freecom.zip</code> to <code>C:\freedos_build\freedos_freecom</code></p>
+<p><br>Rename <code>C:\freedos_build\freedos_freecom\scripts\echoto.bat</code> to <code>C:\freedos_build\freedos_freecom\scripts\echoto.bat.bak</code>.</p>
+<p>Rename <code>C:\freedos_build\freedos_freecom\scripts\echolib.bat</code> to <code>C:\freedos_build\freedos_freecom\scripts\echolib.bat.bak</code>.</p>
+<p><br>Copy <code>C:\freedos_build\echoto.exe</code> to <code>C:\freedos_build\freedos_freecom\scripts\echoto.exe</code>.</p>
+<p>Copy <code>C:\freedos_build\echolib.exe</code> to <code>C:\freedos_build\freedos_freecom\scripts\echolib.exe</code>.</p>
+<p><br>Edit <code>C:\freedos_build\freedos_freecom\cmd\cmd.mak</code>, change</p>
+<pre><code>echolib.bat : ../scripts/echolib.bat
+    $(CP) ..$(DIRSEP)scripts$(DIRSEP)echolib.bat .
+
+cmds.rsp : echolib.bat cmd.mak</code></pre><p>to</p>
+<pre><code>echolib.exe : ../scripts/echolib.exe
+    $(CP) ..$(DIRSEP)scripts$(DIRSEP)echolib.exe .
+
+cmds.rsp : echolib.exe cmd.mak</code></pre><p>Notice four <code>.bat</code> have been changed to <code>.exe</code>.</p>
+<p><br>Edit <code>C:\freedos_build\freedos_freecom\lib\lib.mak</code>, change</p>
+<pre><code>echolib.bat : ../scripts/echolib.bat
+    $(CP) ..$(DIRSEP)scripts$(DIRSEP)echolib.bat .
+
+freecom.rsp : echolib.bat $(OBJ16) $(OBJ17) $(OBJ18) $(OBJ19) $(OBJ20) \</code></pre><p>to</p>
+<pre><code>echolib.exe : ../scripts/echolib.exe
+    $(CP) ..$(DIRSEP)scripts$(DIRSEP)echolib.exe .
+
+freecom.rsp : echolib.exe $(OBJ16) $(OBJ17) $(OBJ18) $(OBJ19) $(OBJ20) \</code></pre><p>Notice four <code>.bat</code> have been changed to <code>.exe</code>.</p>
+<p><br>Edit <code>C:\freedos_build\freedos_freecom\shell\command.mak</code>, change</p>
+<pre><code>echoto.bat: ../scripts/echoto.bat
+    $(CP) ..$(DIRSEP)scripts$(DIRSEP)echoto.bat .
+
+command.rsp : echoto.bat
+    $(RMFILES) command.rsp
+    $(ECHOTO0) command.rsp $(OBJ1)+
+    $(ECHOTO0) command.rsp $(OBJ2)+
+    $(ECHOTO0) command.rsp $(OBJ3)+
+    $(ECHOTO0) command.rsp $(OBJ4)
+    $(ECHOTO0) command.rsp command.exe
+    $(ECHOTO0) command.rsp command.map
+    $(ECHOTO0) command.rsp $(LIBS)</code></pre><p>to</p>
+<pre><code>echoto.exe: ../scripts/echoto.exe
+    $(CP) ..$(DIRSEP)scripts$(DIRSEP)echoto.exe .
+
+command.rsp : echoto.exe
+    $(RMFILES) command.rsp
+    $(ECHOTO0) command.rsp $(OBJ1)+
+    $(ECHOTO0) command.rsp $(OBJ2)+
+    $(ECHOTO0) command.rsp $(OBJ3)+
+    $(ECHOTO0) command.rsp $(OBJ4)+
+    $(ECHOTO0) command.rsp , command.exe
+    $(ECHOTO0) command.rsp , command.map
+    $(ECHOTO0) command.rsp , $(LIBS)</code></pre><p>Notice four <code>.bat</code> have been changed to <code>.exe</code>, and the added one <code>+</code> and three <code>,</code>.</p>
+<p><br>Edit <code>C:\freedos_build\freedos_freecom\suppl\src\suppl.mak</code>, change</p>
+<pre><code>echolib.bat: ../../scripts/echolib.bat
+    $(CP) ..$(DIRSEP)..$(DIRSEP)scripts$(DIRSEP)echolib.bat .
+
+# Prepare Linker Response File
+objlist.txt: echolib.bat suppl.mak</code></pre><p>to</p>
+<pre><code>echolib.exe: ../../scripts/echolib.exe
+    $(CP) ..$(DIRSEP)..$(DIRSEP)scripts$(DIRSEP)echolib.exe .
+
+# Prepare Linker Response File
+objlist.txt: echolib.exe suppl.mak</code></pre><p>Notice four <code>.bat</code> have been changed to <code>.exe</code>.</p>
+<p><br>Copy <code>C:\freedos_build\freedos_freecom\config.std</code> to <code>C:\freedos_build\freedos_freecom\config.mak</code>.</p>
+<p><br>Copy <code>C:\freedos_build\freedos_freecom\config.b</code> to <code>C:\freedos_build\freedos_freecom\config.bat</code>.</p>
+<p>Edit <code>C:\freedos_build\freedos_freecom\config.bat</code>:</p>
+<pre><code>set XNASM=nasm098.exe
+
+set COMPILER=TURBOCPP
+
+set TP1_BASE=c:\tcpp
+
+set PATH=%PATH%;%TP1_BASE%\bin;C:\freedos_build\freedos_compilers</code></pre><p><br>In the command console, run:</p>
+<pre><code>cd C:\freedos_build\freedos_freecom
+
+clean.bat
+
+build.bat -r xms-swap english</code></pre><p>The result file is <code>C:\freedos_build\freedos_freecom\command.com</code>.</p>
+<h2 id="make-freedos-bootable-images"><a class="anchor" href="#make-freedos-bootable-images"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Make FreeDOS bootable images</h2><h3 id="transfer-files-to-the-host-os"><a class="anchor" href="#transfer-files-to-the-host-os"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Transfer files to the host OS</h3><p>In the virtual machine, run:</p>
+<pre><code>mkdir C:\freedos_build\freedos_fd
+
+COPY C:\freedos_build\freedos_kernel\bin\* C:\freedos_build\freedos_fd
+
+COPY C:\freedos_build\freedos_kernel\boot\fat12com.bin C:\freedos_build\freedos_fd
+
+COPY C:\freedos_build\freedos_freecom\command.com C:\freedos_build\freedos_fd</code></pre><p>Use WinRAR to create an archive file <code>C:\freedos_build\freedos_fd.zip</code>.</p>
+<p><br>To transfer <code>C:\freedos_build\freedos_fd.zip</code> to the host OS, we run an HTTP file
+upload service on the host OS. The service is written in Python. Create file <code>D:\freedos_build\http_file_upload_service.py</code>:</p>
+<pre><code># coding: utf-8
+
+from __future__ import absolute_import
+
+import os
+
+from flask import abort
+from flask import Flask
+from flask import request
+from werkzeug import secure_filename
+
+UPLOAD_FOLDER = &#39;D:/freedos_build&#39;
+
+FLASK_APP = Flask(__name__)
+
+@FLASK_APP.route(&#39;/&#39;, methods=[&#39;GET&#39;, &#39;POST&#39;])
+def index_handler():
+    if request.method == &#39;GET&#39;:
+        html = r&quot;&quot;&quot;
+&lt;!doctype html&gt;
+&lt;html&gt;
+    &lt;body&gt;
+        &lt;h1&gt;Upload file&lt;/h1&gt;
+        &lt;form action=&quot;&quot; method=post enctype=multipart/form-data&gt;
+          &lt;p&gt;&lt;input type=file name=file&gt;&lt;input type=submit value=Upload&gt;&lt;/p&gt;
+        &lt;/form&gt;
+    &lt;/body&gt;
+&lt;html&gt;
+&quot;&quot;&quot;
+
+        return html
+
+    if request.method == &#39;POST&#39;:
+        file = request.files[&#39;file&#39;]
+
+        if not file or not file.filename:
+            abort(400)
+
+        file_name = secure_filename(file.filename)
+
+        file_path = os.path.join(UPLOAD_FOLDER, file_name)
+
+        file.save(file_path)
+
+        return &#39;SUCCESS&#39;
+
+    abort(405)
+
+if __name__ == &#39;__main__&#39;:
+    FLASK_APP.run(host=&#39;192.168.56.1&#39;, port=8000)</code></pre><p>Install <code>flask</code>:</p>
+<pre><code>python -m pip install flask</code></pre><p>Run the service:</p>
+<pre><code>python D:\freedos_build\http_file_upload_service.py</code></pre><p>Open <code>http://192.168.56.1:8000/</code> in the virtual machine.</p>
+<p>Upload <code>C:\freedos_build\freedos_fd.zip</code> to the service.</p>
+<p>The file will be put to <code>D:\freedos_build\freedos_fd.zip</code> in the host OS.</p>
+<h3 id="make-freedos-bootable-images-on-windows"><a class="anchor" href="#make-freedos-bootable-images-on-windows"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Make FreeDOS bootable images on Windows</h3><h4 id="install-bfi"><a class="anchor" href="#install-bfi"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Install bfi</h4><p><code>bfi</code> is used to create a floppy image that contains FreeDOS&#39; files. The floppy
+image will then be used to create a CD image in floppy emulation mode.</p>
+<p>Download <code>bfi</code> from <a href="https://www.softpedia.com/get/System/Boot-Manager-Disk/BFI.shtml#download">here</a>.</p>
+<p>Decompress the archive put <code>bfi.exe</code> to <code>D:\freedos_build\bfi\bfi.exe</code></p>
+<h4 id="install-mkisofs"><a class="anchor" href="#install-mkisofs"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Install mkisofs</h4><p><code>mkisofs</code> is used to create a CD image.</p>
+<p>Download <code>CDR-Tools</code> from <a href="https://sourceforge.net/projects/cdrtoolswin/files/1.0/Binaries/CDR-Tools.exe/download">here</a>.</p>
+<p>Run <code>CDR-Tools.exe</code> and it will install <code>mkisofs.exe</code> to <code>C:\Program Files (x86)\cdrtools\mkisofs.exe</code>.</p>
+<h4 id="make-bootable-fd-image"><a class="anchor" href="#make-bootable-fd-image"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Make bootable FD image</h4><p>Decompress <code>D:\freedos_build\freedos_fd.zip</code> to <code>D:\freedos_build\freedos_fd</code>.</p>
+<p>Run:</p>
+<pre><code>D:\freedos_build\bfi\bfi.exe -b=D:\freedos_build\freedos_fd\fat12com.bin -f=D:\freedos_build\freedos.ima D:\freedos_build\freedos_fd</code></pre><p>The FD image is <code>D:\freedos_build\freedos_cd\freedos.ima</code>.</p>
+<h4 id="make-bootable-cd-image"><a class="anchor" href="#make-bootable-cd-image"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Make bootable CD image</h4><p>Run:</p>
+<pre><code>mkdir D:\freedos_build\freedos_cd
+
+COPY D:\freedos_build\freedos.ima D:\freedos_build\freedos_cd\freedos.ima
+
+&quot;C:\Program Files (x86)\cdrtools\mkisofs.exe&quot; -J -N -l -v -relaxed-filenames -V FreeDOS -b freedos.ima -o D:\freedos_build\freedos.iso D:\freedos_build\freedos_cd</code></pre><p>The CD image is <code>D:\freedos_build\freedos.iso</code>.</p>
+<h3 id="make-freedos-bootable-images-on-linux"><a class="anchor" href="#make-freedos-bootable-images-on-linux"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Make FreeDOS bootable images on Linux</h3><h4 id="make-bootable-fd-image"><a class="anchor" href="#make-bootable-fd-image"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Make bootable FD image</h4><p>Create empty floppy image:</p>
+<pre><code>mkfs.vfat -C ~/freedos_build/freedos.ima 1440</code></pre><p><br>Install FreeDOS&#39; boot sector to the floppy image:</p>
+<pre><code>cd ~/freedos_build
+
+unzip freedos_fd.zip
+
+dd conv=notrunc if=~/freedos_build/freedos_fd/fat12com.bin of=~/freedos_build/freedos.ima bs=512 count=1</code></pre><p><br>Copy FreeDOS&#39; files to the floppy image:</p>
+<pre><code>mkdir -v ~/freedos_build/freedos_fd_mount
+
+mount -o loop -t vfat ~/freedos_build/freedos.ima ~/freedos_build/freedos_fd_mount
+
+cp -v ~/freedos_build/freedos_fd/* ~/freedos_build/freedos_fd_mount
+
+umount ~/freedos_build/freedos_fd_mount</code></pre><p>The FD image is <code>~/freedos_build/freedos.ima</code>.</p>
+<h4 id="make-bootable-cd-image"><a class="anchor" href="#make-bootable-cd-image"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Make bootable CD image</h4><p>Run:</p>
+<pre><code>mkdir -v ~/freedos_build/freedos_cd
+
+cp -v ~/freedos_build/freedos.ima freedos_cd/freedos.ima
+
+mkisofs -J -N -l -v -relaxed-filenames -V FreeDOS -b freedos.ima -o ~/freedos_build/freedos.iso freedos_cd</code></pre><p>The CD image is <code>~/freedos_build/freedos.iso</code>.</p>
+
+  </article>
+  <!-- post_content -->
+
+  <div class="prev_next_posts_block">
+    <div>
+      <span class="prev_post_prompt">Previous Post: </span><a class="prev_post_link" href="/blog/posts/python-convert-between-bytes-and-hex-octal-representation">Python convert between bytes and hex octal representation</a><span class="prev_post_date">(2019.07.18)</span>
+    </div>
+    <div>
+      <span class="next_post_prompt">Next Post: </span><a class="next_post_link" href="/blog/posts/freedos-source-code-study-boot-sector">FreeDOS source code study - boot sector</a><span class="next_post_date">(2019.08.04)</span>
+    </div>
+  </div>
+
+  <!-- Special syntax below is for Vue rendering on the client side -->
+  <div v-cloak id="post_comments_block" class="post_comments_block">
+    <p class="title">Comments:</p>
+    <div class="write_comment_block">
+      <div class="comment_info_block">
+        <input v-model="commenter_name" class="commenter_name" placeholder="Your name"></input>
+        <div class="replyto_block">
+          <span>Reply to:</span>
+          <select v-model="replyto_comment_id">
+             <!-- `0` is a special value meaning no replyto -->
+             <option disabled value="0"></option>
+             <option v-for="comment_id in comment_ids" :value="comment_id">{{comment_id}}</option>
+          </select>
+        </div>
+      </div>
+      <textarea v-model="comment_content" class="comment_content" placeholder="Comment"></textarea>
+      <div><input v-on:click="comment_submit_button_on_click" class="submit_button" type="button" value="Submit"></input></div>
+    </div>
+    <ul>
+        <li v-for="comment_info in comment_infos" v-bind:class="comment_info.is_admin ? 'is_admin' : ''">
+            <a v-bind:id="'comment-' + comment_info.comment_id"
+              v-bind:href="'#comment-' + comment_info.comment_id" class="comment_id">{{comment_info.comment_id}}</a>
+            <div class="comment_content">{{comment_info.comment_content}}</div>
+            <div class="comment_info">
+              <span class="commenter_name">{{comment_info.commenter_name}}</span>
+              <span class="create_time">{{comment_info.create_time}}</span>
+              <template v-if="comment_info.replyto_comment_id > 0">
+              <span>to <a v-bind:href="'#comment-' + comment_info.replyto_comment_id">comment-{{comment_info.replyto_comment_id}}</a></span>
+              </template>
+              <a v-bind:data-comment-id="comment_info.comment_id" v-on:click="comment_reply_button_on_click" class="reply_button" href="#post_comments_block">Reply to this</a>
+            </div>
+        </li>
+    </ul>
+  </div>
+  
+
+  <!-- post_toc -->
+  <div id="post_toc_block" class="post_toc_block is_hidden">
+    <a v-on:click="post_toc_hide_link_on_click" data-shown-text="Hide" data-hidden-text="TOC" class="hide_link" href="javascript:void(0)">TOC</a>
+    <span class="title">Contents</span>
+  </div>
+  <!-- post_toc -->
+
+  <!-- back_to_top -->
+  <div id="back_to_top_block" class="back_to_top_block is_hidden">
+    <a v-on:click="back_to_top_button_on_click">
+      <div class="arrow_shape">
+        <div class="arrow_head"></div>
+        <div class="arrow_body"></div>
+      </div>
+    </a>
+  </div>
+  <!-- back_to_top -->
+
+  <div id="post_id" style="display: none;">33</div>
+  <!-- main_inner -->
+</main>
+<!-- main -->
+
+<!-- back_to_top -->
+
+<!-- footer -->
+<footer>
+  <!-- footer_inner -->
+  <span>This blog is powered by my own project <a href="https://github.com/AoiKuiyuyou/AoikSeldomStaticSite">AoikSeldomStaticSite</a>.</span>
+  <!-- footer_inner -->
+</footer>
+<!-- footer -->
+
+<!-- bottom_scripts -->
+
+<script type="text/javascript" src="/blog/libs_outer/jquery/3.3.1/jquery.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/vue/2.5.16/vue.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/toastr/2.1.3/toastr.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/highlight/9.12.0/highlight.min.js"></script>
+<script type="text/javascript" src="/blog/libs_inner/base/post.js"></script>
+<!-- bottom_scripts -->
+
+</div>
+<!-- vue_app -->
+
+</body>
+</html>

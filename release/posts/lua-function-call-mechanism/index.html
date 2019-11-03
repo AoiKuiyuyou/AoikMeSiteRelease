@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- head -->
+<head>
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-117972998-1"></script>
+  <script>
+    var hostname = window.location.hostname;
+    if (hostname && hostname !== '127.0.0.1' && hostname !== 'localhost' && hostname !== 'aoik.me.local') {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-117972998-1');
+    }
+  </script>
+  <!-- Google Analytics -->
+
+  <!-- head_meta -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <!-- head_meta -->
+
+  <!-- head_title -->
+  <title>Lua function call mechanism</title>
+  <!-- head_title -->
+
+  <!-- head_links -->
+  <link rel="stylesheet" href="/blog/libs_outer/bootstrap/4.0.0/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/blog/libs_outer/github-markdown-css/2.10.0/github-markdown.css">
+  <link rel="stylesheet" href="/blog/libs_inner/base/base.css">
+  <!-- head_links -->
+
+  <!-- head_links2 -->
+
+<link rel="stylesheet" href="/blog/libs_outer/toastr/2.1.3/toastr.min.css">
+<link rel="stylesheet" href="/blog/libs_outer/highlight/9.12.0/highlight.min.css">
+  <!-- head_links2 -->
+
+  <!-- head_styles -->
+  <!-- head_styles -->
+</head>
+<!-- head -->
+
+<body>
+<div id="vue_app">
+
+<!-- header -->
+<header>
+  <!-- header_inner -->
+  <!-- logo -->
+  <a class="logo_block" href="/blog"><span class="logo_text">Aoik</span></a>
+  <!-- nav -->
+  <nav class="nav_block">
+    <div class="nav_table">
+      <a class="current" href="/blog/posts"><span>Posts</span></a>
+      <a class="" href="/blog/reposts"><span>Reposts</span></a>
+      <a class="" href="/blog/tags"><span>Tags</span></a>
+      <a target="_blank" href="https://github.com/AoiKuiyuyou/Aoik/blob/master/README.md"><span>Github</span></a>
+      <a target="_blank" href="http://aoikuiyuyou.github.io/me.html"><span>Resume</span></a>
+    </div>
+  </nav>
+  <!-- header_inner -->
+</header>
+<!-- header -->
+
+<!-- main -->
+<main>
+  <!-- main_inner -->
+  
+  <!-- breadcrumbs -->
+  <div class="breadcrumbs_block">
+    <a href="/blog">Home</a>
+    <span class="sep">&gt;</span>
+    <a href="/blog/posts">Posts</a>
+    <span class="sep">&gt;</span>
+    <a href="">This</a>
+  </div>
+  <!-- breadcrumbs -->
+
+
+
+  <!-- post_info -->
+  <div class="post_info_block">
+    <div class="tags_block">
+    <a class="tag" href="/blog/tags/lua">lua</a>
+    <a class="tag" href="/blog/tags/source-code-study">source-code-study</a>
+    <a class="tag" href="/blog/tags/吸星大法强吃源码">吸星大法强吃源码</a>
+    </div>
+    <div class="fields_block">
+      <span class="author">Aoik,</span>
+      <span class="create_time">2019.03.28</span>
+    </div>
+  </div>
+  <!-- post_info -->
+
+  <!-- post_content -->
+  <!-- `v-pre` aims to skip Vue parsing -->
+  <article v-pre class="post_content_block markdown-body">
+  <h1 id="lua-function-call-mechanism">Lua function call mechanism</h1><p>Lua version 5.3.5.</p>
+<p>Lua&#39;s execution flow has been introduced in <a href="https://aoik.me/blog/posts/lua-execution-flow">this post</a>.</p>
+<p><br>In Lua, functions are represented as two types <code>CClosure</code> and <code>LClosure</code>, for
+functions defined in C and Lua respectively.</p>
+<pre><code>#define ClosureHeader \
+  CommonHeader; lu_byte nupvalues; GCObject *gclist
+
+
+typedef int (*lua_CFunction) (lua_State *L);
+
+
+typedef struct CClosure {
+  ClosureHeader;
+  lua_CFunction f;
+  TValue upvalue[1];  /* list of upvalues */
+} CClosure;
+
+
+typedef struct LClosure {
+  ClosureHeader;
+  struct Proto *p;
+  UpVal *upvals[1];  /* list of upvalues */
+} LClosure;
+
+
+typedef union Closure {
+  CClosure c;
+  LClosure l;
+} Closure;</code></pre><p><br>Functions are called closures because they have <code>upvalues</code> associated with them.
+The <code>CClosure</code> struct contains an array of <code>TValue</code> values as upvalues. The
+<code>LClosure</code> struct contains an array of <code>UpVal</code> pointers:</p>
+<pre><code>struct UpVal {
+  TValue *v;  /* points to stack or to its own value */
+  lu_mem refcount;  /* reference counter */
+  union {
+    struct {  /* (when open) */
+      UpVal *next;  /* linked list */
+      int touched;  /* mark to avoid cycles with dead threads */
+    } open;
+    TValue value;  /* the value (when closed) */
+  } u;
+};
+
+
+typedef struct UpVal UpVal;</code></pre><p>An <code>UpVal</code> is open if it is in the scope of the execution flow, in which case the
+<code>UpVal.v</code> field points to the stack slot holding the current value of the
+upvalue.</p>
+<p>An <code>UpVal</code> is closed if it is out of the scope of the execution flow, in which
+case the <code>UpVal.u.value</code> field holds the final value of the upvalue and the
+<code>UpVal.v</code> field points to the <code>UpVal.u.value</code> field.</p>
+<p><br>The <code>LClosure.p</code> field is a pointer to a <code>Proto</code> struct:</p>
+<pre><code>typedef struct Proto {
+  CommonHeader;
+  TValue *k;  /* constants used by the function */
+  Instruction *code;
+  struct Proto **p;  /* functions defined inside the function */
+  int *lineinfo;  /* map from opcodes to source lines (debug information) */
+  LocVar *locvars;  /* information about local variables (debug information) */
+  Upvaldesc *upvalues;  /* upvalue information */
+  union Closure *cache;  /* last created closure with this prototype */
+  TString  *source;  /* used for debug information */
+  int sizeupvalues;  /* size of &#39;upvalues&#39; */
+  int sizek;  /* size of `k&#39; */
+  int sizecode;
+  int sizelineinfo;
+  int sizep;  /* size of `p&#39; */
+  int sizelocvars;
+  int linedefined;
+  int lastlinedefined;
+  GCObject *gclist;
+  lu_byte numparams;  /* number of fixed parameters */
+  lu_byte is_vararg;
+  lu_byte maxstacksize;  /* maximum stack used by this function */
+} Proto;</code></pre><p>The <code>Proto.code</code> field is an array of VM instructions.</p>
+<p>The <code>Proto.p</code> field is an array of pointers to <code>Proto</code> structs of the closure&#39;s
+sub-closures. Inside the <code>luaY_parser</code> function, the main closure&#39;s <code>LClosure</code>
+struct is created. During parsing source code, pointers to <code>Proto</code> structs of
+sub-closures are added to the main closure&#39;s <code>Proto.p</code> array.</p>
+<p>After parsing of source code is done, the main closure&#39;s <code>LClosure</code> struct is
+on stack. The <code>handle_script</code> function calls <code>docall</code>, which calls <code>lua_pcall</code>,
+which calls <code>lua_pcallk</code>, which calls <code>luaD_pcall</code>, which calls
+<code>luaD_rawrunprotected</code>, which calls <code>f_call</code>, which calls <code>luaD_callnoyield</code>,
+which calls <code>luaD_call</code>.</p>
+<p><code>luaD_call</code> calls <code>luaD_precall</code> to prepare the call. If the target closure is
+a <code>CClosure</code>, it gets called immediately. If the target closure is a
+<code>LClosure</code>, a <code>CallInfo</code> struct is created to describe the closure call:</p>
+<pre><code>typedef struct CallInfo {
+  StkId func;  /* function index in the stack */
+  StkId top;  /* top for this function */
+  struct CallInfo *previous, *next;  /* dynamic call link */
+  union {
+    struct {  /* only for Lua functions */
+      StkId base;  /* base for this function */
+      const Instruction *savedpc;
+    } l;
+    struct {  /* only for C functions */
+      lua_KFunction k;  /* continuation in case of yields */
+      ptrdiff_t old_errfunc;
+      lua_KContext ctx;  /* context info. in case of yields */
+    } c;
+  } u;
+  ptrdiff_t extra;
+  short nresults;  /* expected number of results from this function */
+  unsigned short callstatus;
+} CallInfo;</code></pre><p>The <code>CallInfo.l.base</code> is the offset base for stack indexes used in the target
+closure.</p>
+<p>The <code>CallInfo.func</code> field is index (offset from <code>CallInfo.l.base</code>) of the stack
+slot holding the target closure.</p>
+<p>The <code>CallInfo.l.savedpc</code> points to the next VM instruction of the target
+closure.</p>
+<p><code>luaD_precall</code> sets <code>L-ci</code> to point to the <code>CallInfo</code>.</p>
+<p><code>luaD_call</code> then calls <code>luaV_execute</code>. <code>luaV_execute</code> gets the current
+<code>CallInfo</code> from <code>L-ci</code>, and start running the target closure&#39;s VM instructions.</p>
+<p><br>When source code defines a function, the corresponding VM instruction is
+<code>OP_CLOSURE</code>. The handling code in <code>luaV_execute</code> is:</p>
+<pre><code>vmcase(OP_CLOSURE) {
+  Proto *p = cl-&gt;p-&gt;p[GETARG_Bx(i)];
+  LClosure *ncl = getcached(p, cl-&gt;upvals, base);  /* cached closure */
+  if (ncl == NULL)  /* no match? */
+    pushclosure(L, p, cl-&gt;upvals, base, ra);  /* create a new one */
+  else
+    setclLvalue(L, ra, ncl);  /* push cashed closure */
+  checkGC(L, ra + 1);
+  vmbreak;
+}</code></pre><p>The sub-closure&#39;s <code>Proto</code> struct pointer is obtained from the current closure&#39;s
+<code>Proto.p</code> array. The <code>pushclosure</code> function creates a new <code>LClosure</code> for the
+sub-closure and set its <code>LClosure.p</code> field to point to the obtained <code>Proto</code>
+struct.</p>
+<p>The <code>pushclosure</code> function then initializes the sub-closure&#39;s <code>LClosure.upvals</code>
+field (an <code>UpVal</code> pointer array), for upvalues used in the sub-closure.
+Depending on whether an upvalue is defined in a parent closure or an ancestor
+closure, the <code>UpVal</code> struct pointer is obtained from the parent closure&#39;s
+<code>UpVal</code> pointer array, or by calling <code>luaF_findupval</code>, respectively,</p>
+<p><br>When source code calls a function, the corresponding VM instruction is
+<code>OP_CALL</code>. The handling code in <code>luaV_execute</code> is:</p>
+<pre><code>vmcase(OP_CALL) {
+  int b = GETARG_B(i);
+  int nresults = GETARG_C(i) - 1;
+  if (b != 0) L-&gt;top = ra+b;  /* else previous instruction set top */
+  if (luaD_precall(L, ra, nresults)) {  /* C function? */
+    if (nresults &gt;= 0)
+      L-&gt;top = ci-&gt;top;  /* adjust results */
+    Protect((void)0);  /* update &#39;base&#39; */
+  }
+  else {  /* Lua function */
+    ci = L-&gt;ci;
+    goto newframe;  /* restart luaV_execute over new Lua function */
+  }
+  vmbreak;
+}</code></pre><p>The stack index of the closure to call is encoded in the <code>OP_CALL</code>
+instruction&#39;s <code>RA</code> field, which is put in <code>luaV_execute</code>&#39;s <code>ra</code> variable.
+<code>luaD_precall</code> is called to create a new <code>CallInfo</code> and sets <code>L-ci</code> to point to
+it. <code>luaV_execute</code>&#39;s <code>ci</code> variable is set to point to the new <code>CallInfo</code>. Then
+the <code>goto newframe</code> statement causes the VM to start running the target
+closure&#39;s instructions.</p>
+<p><br>When source code returns from a function, the corresponding VM instruction is
+<code>OP_RETURN</code>. The handling code in <code>luaV_execute</code> is:</p>
+<pre><code>vmcase(OP_RETURN) {
+  int b = GETARG_B(i);
+  if (cl-&gt;p-&gt;sizep &gt; 0) luaF_close(L, base);
+  b = luaD_poscall(L, ci, ra, (b != 0 ? b - 1 : cast_int(L-&gt;top - ra)));
+  if (ci-&gt;callstatus &amp; CIST_FRESH)  /* local &#39;ci&#39; still from callee */
+    return;  /* external invocation: return */
+  else {  /* invocation via reentry: continue execution */
+    ci = L-&gt;ci;
+    if (b) L-&gt;top = ci-&gt;top;
+    lua_assert(isLua(ci));
+    lua_assert(GET_OPCODE(*((ci)-&gt;u.l.savedpc - 1)) == OP_CALL);
+    goto newframe;  /* restart luaV_execute over new Lua function */
+  }
+}</code></pre><p>The <code>luaD_poscall</code> function is called. <code>L.ci</code> is set to point to the parent
+closure&#39;s <code>CallInfo</code>. <code>luaV_execute</code>&#39;s <code>ci</code> variable is set to point to the
+parent closure&#39;s <code>CallInfo</code>. Then the <code>goto newframe</code> statement causes the VM
+to start running the parent closure&#39;s next instruction pointed to by
+<code>CallInfo.l.savedpc</code>.</p>
+
+  </article>
+  <!-- post_content -->
+
+  <div class="prev_next_posts_block">
+    <div>
+      <span class="prev_post_prompt">Previous Post: </span><a class="prev_post_link" href="/blog/posts/python-3.7.0-execution-flow">Python 3.7.0 execution flow</a><span class="prev_post_date">(2019.03.26)</span>
+    </div>
+    <div>
+      <span class="next_post_prompt">Next Post: </span><a class="next_post_link" href="/blog/posts/lua-error-handling-mechanism">Lua error handling mechanism</a><span class="next_post_date">(2019.03.30)</span>
+    </div>
+  </div>
+
+  <!-- Special syntax below is for Vue rendering on the client side -->
+  <div v-cloak id="post_comments_block" class="post_comments_block">
+    <p class="title">Comments:</p>
+    <div class="write_comment_block">
+      <div class="comment_info_block">
+        <input v-model="commenter_name" class="commenter_name" placeholder="Your name"></input>
+        <div class="replyto_block">
+          <span>Reply to:</span>
+          <select v-model="replyto_comment_id">
+             <!-- `0` is a special value meaning no replyto -->
+             <option disabled value="0"></option>
+             <option v-for="comment_id in comment_ids" :value="comment_id">{{comment_id}}</option>
+          </select>
+        </div>
+      </div>
+      <textarea v-model="comment_content" class="comment_content" placeholder="Comment"></textarea>
+      <div><input v-on:click="comment_submit_button_on_click" class="submit_button" type="button" value="Submit"></input></div>
+    </div>
+    <ul>
+        <li v-for="comment_info in comment_infos" v-bind:class="comment_info.is_admin ? 'is_admin' : ''">
+            <a v-bind:id="'comment-' + comment_info.comment_id"
+              v-bind:href="'#comment-' + comment_info.comment_id" class="comment_id">{{comment_info.comment_id}}</a>
+            <div class="comment_content">{{comment_info.comment_content}}</div>
+            <div class="comment_info">
+              <span class="commenter_name">{{comment_info.commenter_name}}</span>
+              <span class="create_time">{{comment_info.create_time}}</span>
+              <template v-if="comment_info.replyto_comment_id > 0">
+              <span>to <a v-bind:href="'#comment-' + comment_info.replyto_comment_id">comment-{{comment_info.replyto_comment_id}}</a></span>
+              </template>
+              <a v-bind:data-comment-id="comment_info.comment_id" v-on:click="comment_reply_button_on_click" class="reply_button" href="#post_comments_block">Reply to this</a>
+            </div>
+        </li>
+    </ul>
+  </div>
+  
+
+  <!-- post_toc -->
+  <div id="post_toc_block" class="post_toc_block is_hidden">
+    <a v-on:click="post_toc_hide_link_on_click" data-shown-text="Hide" data-hidden-text="TOC" class="hide_link" href="javascript:void(0)">TOC</a>
+    <span class="title">Contents</span>
+  </div>
+  <!-- post_toc -->
+
+  <!-- back_to_top -->
+  <div id="back_to_top_block" class="back_to_top_block is_hidden">
+    <a v-on:click="back_to_top_button_on_click">
+      <div class="arrow_shape">
+        <div class="arrow_head"></div>
+        <div class="arrow_body"></div>
+      </div>
+    </a>
+  </div>
+  <!-- back_to_top -->
+
+  <div id="post_id" style="display: none;">19</div>
+  <!-- main_inner -->
+</main>
+<!-- main -->
+
+<!-- back_to_top -->
+
+<!-- footer -->
+<footer>
+  <!-- footer_inner -->
+  <span>This blog is powered by my own project <a href="https://github.com/AoiKuiyuyou/AoikSeldomStaticSite">AoikSeldomStaticSite</a>.</span>
+  <!-- footer_inner -->
+</footer>
+<!-- footer -->
+
+<!-- bottom_scripts -->
+
+<script type="text/javascript" src="/blog/libs_outer/jquery/3.3.1/jquery.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/vue/2.5.16/vue.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/toastr/2.1.3/toastr.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/highlight/9.12.0/highlight.min.js"></script>
+<script type="text/javascript" src="/blog/libs_inner/base/post.js"></script>
+<!-- bottom_scripts -->
+
+</div>
+<!-- vue_app -->
+
+</body>
+</html>

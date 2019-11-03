@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- head -->
+<head>
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-117972998-1"></script>
+  <script>
+    var hostname = window.location.hostname;
+    if (hostname && hostname !== '127.0.0.1' && hostname !== 'localhost' && hostname !== 'aoik.me.local') {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-117972998-1');
+    }
+  </script>
+  <!-- Google Analytics -->
+
+  <!-- head_meta -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <!-- head_meta -->
+
+  <!-- head_title -->
+  <title>Python's compiler - from CST to AST</title>
+  <!-- head_title -->
+
+  <!-- head_links -->
+  <link rel="stylesheet" href="/blog/libs_outer/bootstrap/4.0.0/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/blog/libs_outer/github-markdown-css/2.10.0/github-markdown.css">
+  <link rel="stylesheet" href="/blog/libs_inner/base/base.css">
+  <!-- head_links -->
+
+  <!-- head_links2 -->
+
+<link rel="stylesheet" href="/blog/libs_outer/toastr/2.1.3/toastr.min.css">
+<link rel="stylesheet" href="/blog/libs_outer/highlight/9.12.0/highlight.min.css">
+  <!-- head_links2 -->
+
+  <!-- head_styles -->
+  <!-- head_styles -->
+</head>
+<!-- head -->
+
+<body>
+<div id="vue_app">
+
+<!-- header -->
+<header>
+  <!-- header_inner -->
+  <!-- logo -->
+  <a class="logo_block" href="/blog"><span class="logo_text">Aoik</span></a>
+  <!-- nav -->
+  <nav class="nav_block">
+    <div class="nav_table">
+      <a class="current" href="/blog/posts"><span>Posts</span></a>
+      <a class="" href="/blog/reposts"><span>Reposts</span></a>
+      <a class="" href="/blog/tags"><span>Tags</span></a>
+      <a target="_blank" href="https://github.com/AoiKuiyuyou/Aoik/blob/master/README.md"><span>Github</span></a>
+      <a target="_blank" href="http://aoikuiyuyou.github.io/me.html"><span>Resume</span></a>
+    </div>
+  </nav>
+  <!-- header_inner -->
+</header>
+<!-- header -->
+
+<!-- main -->
+<main>
+  <!-- main_inner -->
+  
+  <!-- breadcrumbs -->
+  <div class="breadcrumbs_block">
+    <a href="/blog">Home</a>
+    <span class="sep">&gt;</span>
+    <a href="/blog/posts">Posts</a>
+    <span class="sep">&gt;</span>
+    <a href="">This</a>
+  </div>
+  <!-- breadcrumbs -->
+
+
+
+  <!-- post_info -->
+  <div class="post_info_block">
+    <div class="tags_block">
+    <a class="tag" href="/blog/tags/python">python</a>
+    <a class="tag" href="/blog/tags/compiler">compiler</a>
+    <a class="tag" href="/blog/tags/parser">parser</a>
+    <a class="tag" href="/blog/tags/source-code-study">source-code-study</a>
+    <a class="tag" href="/blog/tags/吸星大法强吃源码">吸星大法强吃源码</a>
+    </div>
+    <div class="fields_block">
+      <span class="author">Aoik,</span>
+      <span class="create_time">2019.10.28</span>
+    </div>
+  </div>
+  <!-- post_info -->
+
+  <!-- post_content -->
+  <!-- `v-pre` aims to skip Vue parsing -->
+  <article v-pre class="post_content_block markdown-body">
+  <h1 id="python-39-s-compiler-from-cst-to-ast">Python&#39;s compiler - from CST to AST</h1><p>Python&#39;s compiler series:</p>
+<ul>
+<li><a href="/blog/posts/python-3.8.0-execution-flow">Python 3.8.0 execution flow</a></li>
+<li><a href="/blog/posts/python-compiler-from-grammar-to-dfa">Python&#39;s compiler - from grammar to DFA</a></li>
+<li><a href="/blog/posts/python-compiler-the-grammar-file-is-not-ll1-but-the-parser-is">Python&#39;s compiler - the grammar file is not LL(1) but the parser is</a></li>
+<li><a href="/blog/posts/python-compiler-from-tokens-to-cst">Python&#39;s compiler - from tokens to CST</a></li>
+<li><a href="/blog/posts/python-compiler-from-cst-to-ast">Python&#39;s compiler - from CST to AST</a></li>
+</ul>
+<h4 id="use-asdl-to-define-ast"><a class="anchor" href="#use-asdl-to-define-ast"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Use ASDL to define AST</h4><p>Python&#39;s AST nodes&#39; data structures are defined using the <a href="http://asdl.sourceforge.net/">ASDL</a> (Zephyr Abstract Syntax Definition Language) file <a href="https://github.com/python/cpython/blob/v3.8.0/Parser/Python.asdl">Parser/Python.asdl</a>.</p>
+<p>The grammar of the ASDL file is:</p>
+<pre><code>module        ::= &quot;module&quot; Id &quot;{&quot; [definitions] &quot;}&quot;
+definitions   ::= { TypeId &quot;=&quot; type }
+type          ::= product | sum
+product       ::= fields [&quot;attributes&quot; fields]
+fields        ::= &quot;(&quot; { field, &quot;,&quot; } field &quot;)&quot;
+field         ::= TypeId [&quot;?&quot; | &quot;*&quot;] [Id]
+sum           ::= constructor { &quot;|&quot; constructor } [&quot;attributes&quot; fields]
+constructor   ::= ConstructorId [fields]</code></pre><ul>
+<li>Lowercase names are non-terminals.</li>
+<li>Uppercase names are terminals.</li>
+<li>Literal tokens are in double quotes.</li>
+<li><code>[]</code> means zero or one.</li>
+<li><code>{}</code> means one or more.</li>
+</ul>
+<h4 id="parse-asdl-file-to-asdl-ast"><a class="anchor" href="#parse-asdl-file-to-asdl-ast"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Parse ASDL file to ASDL AST</h4><p><a href="https://github.com/python/cpython/blob/v3.8.0/Parser/asdl.py">Parser/asdl.py</a> parses the ASDL file to an ASDL AST (not to be confused with Python&#39;s AST).</p>
+<p>A modified version of <a href="https://github.com/python/cpython/blob/v3.8.0/Parser/asdl.py">Parser/asdl.py</a> that pretty prints the ASDL AST:</p>
+<pre><code>#-------------------------------------------------------------------------------
+# Parser for ASDL [1] definition files. Reads in an ASDL description and parses
+# it into an AST that describes it.
+#
+# The EBNF we&#39;re parsing here: Figure 1 of the paper [1]. Extended to support
+# modules and attributes after a product. Words starting with Capital letters
+# are terminals. Literal tokens are in &quot;double quotes&quot;. Others are
+# non-terminals. Id is either TokenId or ConstructorId.
+#
+# module        ::= &quot;module&quot; Id &quot;{&quot; [definitions] &quot;}&quot;
+# definitions   ::= { TypeId &quot;=&quot; type }
+# type          ::= product | sum
+# product       ::= fields [&quot;attributes&quot; fields]
+# fields        ::= &quot;(&quot; { field, &quot;,&quot; } field &quot;)&quot;
+# field         ::= TypeId [&quot;?&quot; | &quot;*&quot;] [Id]
+# sum           ::= constructor { &quot;|&quot; constructor } [&quot;attributes&quot; fields]
+# constructor   ::= ConstructorId [fields]
+#
+# [1] &quot;The Zephyr Abstract Syntax Description Language&quot; by Wang, et. al. See
+#     http://asdl.sourceforge.net/
+#-------------------------------------------------------------------------------
+from collections import namedtuple
+import re
+
+__all__ = [
+    &#39;builtin_types&#39;, &#39;parse&#39;, &#39;AST&#39;, &#39;Module&#39;, &#39;Type&#39;, &#39;Constructor&#39;,
+    &#39;Field&#39;, &#39;Sum&#39;, &#39;Product&#39;, &#39;VisitorBase&#39;, &#39;Check&#39;, &#39;check&#39;]
+
+# The following classes define nodes into which the ASDL description is parsed.
+# Note: this is a &quot;meta-AST&quot;. ASDL files (such as Python.asdl) describe the AST
+# structure used by a programming language. But ASDL files themselves need to be
+# parsed. This module parses ASDL files and uses a simple AST to represent them.
+# See the EBNF at the top of the file to understand the logical connection
+# between the various node types.
+
+builtin_types = {&#39;identifier&#39;, &#39;string&#39;, &#39;bytes&#39;, &#39;int&#39;, &#39;object&#39;, &#39;singleton&#39;,
+                 &#39;constant&#39;}
+
+def indent(text, step=&#39;  &#39;):
+    return step + (&#39;\n&#39; + step).join(text.split(&#39;\n&#39;))
+
+def repr_list(items):
+    if not items:
+        return &#39;[]&#39;
+    lines = []
+    lines.append(&#39;[\n&#39;)
+    for item in items:
+        item_repr = repr(item)
+        item_repr = indent(item_repr) + &#39;,\n&#39;
+        lines.append(item_repr)
+    lines.append(&#39;]&#39;)
+    return &#39;&#39;.join(lines)
+
+class AST:
+    def __repr__(self):
+        raise NotImplementedError
+
+class Module(AST):
+    def __init__(self, name, dfns):
+        self.name = name
+        self.dfns = dfns
+        self.types = {type.name: type.value for type in dfns}
+
+    def __repr__(self):
+        return &#39;Module({0}, {1})&#39;.format(self.name, repr_list(self.dfns))
+
+class Type(AST):
+    def __init__(self, name, value):
+        self.name = name
+        self.value = value
+
+    def __repr__(self):
+        body_str = indent(repr(self.value))
+        return &#39;Type({0}\n{1}\n)&#39;.format(self.name, body_str)
+
+class Constructor(AST):
+    def __init__(self, name, fields=None):
+        self.name = name
+        self.fields = fields or []
+
+    def __repr__(self):
+        return &#39;Constructor({0}, {1})&#39;.format(self.name, repr_list(self.fields))
+
+class Field(AST):
+    def __init__(self, type, name=None, seq=False, opt=False):
+        self.type = type
+        self.name = name
+        self.seq = seq
+        self.opt = opt
+
+    def __repr__(self):
+        if self.seq:
+            extra = &quot;, seq=True&quot;
+        elif self.opt:
+            extra = &quot;, opt=True&quot;
+        else:
+            extra = &quot;&quot;
+        if self.name is None:
+            return &#39;Field({0.type}{1})&#39;.format(self, extra)
+        else:
+            return &#39;Field({0.type}, {0.name}{1})&#39;.format(self, extra)
+
+class Sum(AST):
+    def __init__(self, types, attributes=None):
+        self.types = types
+        self.attributes = attributes or []
+
+    def __repr__(self):
+        if self.attributes:
+            return &#39;Sum({0},\n{1})&#39;.format(
+                repr_list(self.types),
+                repr_list(self.attributes),
+            )
+        else:
+            return &#39;Sum({0})&#39;.format(repr_list(self.types))
+
+class Product(AST):
+    def __init__(self, fields, attributes=None):
+        self.fields = fields
+        self.attributes = attributes or []
+
+    def __repr__(self):
+        if self.attributes:
+            return &#39;Product({0},\n{1})&#39;.format(
+                repr_list(self.fields),
+                repr_list(self.attributes),
+            )
+        else:
+            return &#39;Product({0})&#39;.format(repr_list(self.fields))
+
+# A generic visitor for the meta-AST that describes ASDL. This can be used by
+# emitters. Note that this visitor does not provide a generic visit method, so a
+# subclass needs to define visit methods from visitModule to as deep as the
+# interesting node.
+# We also define a Check visitor that makes sure the parsed ASDL is well-formed.
+
+class VisitorBase(object):
+    &quot;&quot;&quot;Generic tree visitor for ASTs.&quot;&quot;&quot;
+    def __init__(self):
+        self.cache = {}
+
+    def visit(self, obj, *args):
+        klass = obj.__class__
+        meth = self.cache.get(klass)
+        if meth is None:
+            methname = &quot;visit&quot; + klass.__name__
+            meth = getattr(self, methname, None)
+            self.cache[klass] = meth
+        if meth:
+            try:
+                meth(obj, *args)
+            except Exception as e:
+                print(&quot;Error visiting %r: %s&quot; % (obj, e))
+                raise
+
+class Check(VisitorBase):
+    &quot;&quot;&quot;A visitor that checks a parsed ASDL tree for correctness.
+
+    Errors are printed and accumulated.
+    &quot;&quot;&quot;
+    def __init__(self):
+        super(Check, self).__init__()
+        self.cons = {}
+        self.errors = 0
+        self.types = {}
+
+    def visitModule(self, mod):
+        for dfn in mod.dfns:
+            self.visit(dfn)
+
+    def visitType(self, type):
+        self.visit(type.value, str(type.name))
+
+    def visitSum(self, sum, name):
+        for t in sum.types:
+            self.visit(t, name)
+
+    def visitConstructor(self, cons, name):
+        key = str(cons.name)
+        conflict = self.cons.get(key)
+        if conflict is None:
+            self.cons[key] = name
+        else:
+            print(&#39;Redefinition of constructor {}&#39;.format(key))
+            print(&#39;Defined in {} and {}&#39;.format(conflict, name))
+            self.errors += 1
+        for f in cons.fields:
+            self.visit(f, key)
+
+    def visitField(self, field, name):
+        key = str(field.type)
+        l = self.types.setdefault(key, [])
+        l.append(name)
+
+    def visitProduct(self, prod, name):
+        for f in prod.fields:
+            self.visit(f, name)
+
+def check(mod):
+    &quot;&quot;&quot;Check the parsed ASDL tree for correctness.
+
+    Return True if success. For failure, the errors are printed out and False
+    is returned.
+    &quot;&quot;&quot;
+    v = Check()
+    v.visit(mod)
+
+    for t in v.types:
+        if t not in mod.types and not t in builtin_types:
+            v.errors += 1
+            uses = &quot;, &quot;.join(v.types[t])
+            print(&#39;Undefined type {}, used in {}&#39;.format(t, uses))
+    return not v.errors
+
+# The ASDL parser itself comes next. The only interesting external interface
+# here is the top-level parse function.
+
+def parse(filename):
+    &quot;&quot;&quot;Parse ASDL from the given file and return a Module node describing it.&quot;&quot;&quot;
+    with open(filename) as f:
+        parser = ASDLParser()
+        return parser.parse(f.read())
+
+# Types for describing tokens in an ASDL specification.
+class TokenKind:
+    &quot;&quot;&quot;TokenKind is provides a scope for enumerated token kinds.&quot;&quot;&quot;
+    (ConstructorId, TypeId, Equals, Comma, Question, Pipe, Asterisk,
+     LParen, RParen, LBrace, RBrace) = range(11)
+
+    operator_table = {
+        &#39;=&#39;: Equals, &#39;,&#39;: Comma,    &#39;?&#39;: Question, &#39;|&#39;: Pipe,    &#39;(&#39;: LParen,
+        &#39;)&#39;: RParen, &#39;*&#39;: Asterisk, &#39;{&#39;: LBrace,   &#39;}&#39;: RBrace}
+
+Token = namedtuple(&#39;Token&#39;, &#39;kind value lineno&#39;)
+
+class ASDLSyntaxError(Exception):
+    def __init__(self, msg, lineno=None):
+        self.msg = msg
+        self.lineno = lineno or &#39;&lt;unknown&gt;&#39;
+
+    def __str__(self):
+        return &#39;Syntax error on line {0.lineno}: {0.msg}&#39;.format(self)
+
+def tokenize_asdl(buf):
+    &quot;&quot;&quot;Tokenize the given buffer. Yield Token objects.&quot;&quot;&quot;
+    for lineno, line in enumerate(buf.splitlines(), 1):
+        for m in re.finditer(r&#39;\s*(\w+|--.*|.)&#39;, line.strip()):
+            c = m.group(1)
+            if c[0].isalpha():
+                # Some kind of identifier
+                if c[0].isupper():
+                    yield Token(TokenKind.ConstructorId, c, lineno)
+                else:
+                    yield Token(TokenKind.TypeId, c, lineno)
+            elif c[:2] == &#39;--&#39;:
+                # Comment
+                break
+            else:
+                # Operators
+                try:
+                    op_kind = TokenKind.operator_table[c]
+                except KeyError:
+                    raise ASDLSyntaxError(&#39;Invalid operator %s&#39; % c, lineno)
+                yield Token(op_kind, c, lineno)
+
+class ASDLParser:
+    &quot;&quot;&quot;Parser for ASDL files.
+
+    Create, then call the parse method on a buffer containing ASDL.
+    This is a simple recursive descent parser that uses tokenize_asdl for the
+    lexing.
+    &quot;&quot;&quot;
+    def __init__(self):
+        self._tokenizer = None
+        self.cur_token = None
+
+    def parse(self, buf):
+        &quot;&quot;&quot;Parse the ASDL in the buffer and return an AST with a Module root.
+        &quot;&quot;&quot;
+        self._tokenizer = tokenize_asdl(buf)
+        self._advance()
+        return self._parse_module()
+
+    def _parse_module(self):
+        if self._at_keyword(&#39;module&#39;):
+            self._advance()
+        else:
+            raise ASDLSyntaxError(
+                &#39;Expected &quot;module&quot; (found {})&#39;.format(self.cur_token.value),
+                self.cur_token.lineno)
+        name = self._match(self._id_kinds)
+        self._match(TokenKind.LBrace)
+        defs = self._parse_definitions()
+        self._match(TokenKind.RBrace)
+        return Module(name, defs)
+
+    def _parse_definitions(self):
+        defs = []
+        while self.cur_token.kind == TokenKind.TypeId:
+            typename = self._advance()
+            self._match(TokenKind.Equals)
+            type = self._parse_type()
+            defs.append(Type(typename, type))
+        return defs
+
+    def _parse_type(self):
+        if self.cur_token.kind == TokenKind.LParen:
+            # If we see a (, it&#39;s a product
+            return self._parse_product()
+        else:
+            # Otherwise it&#39;s a sum. Look for ConstructorId
+            sumlist = [Constructor(self._match(TokenKind.ConstructorId),
+                                   self._parse_optional_fields())]
+            while self.cur_token.kind  == TokenKind.Pipe:
+                # More constructors
+                self._advance()
+                sumlist.append(Constructor(
+                                self._match(TokenKind.ConstructorId),
+                                self._parse_optional_fields()))
+            return Sum(sumlist, self._parse_optional_attributes())
+
+    def _parse_product(self):
+        return Product(self._parse_fields(), self._parse_optional_attributes())
+
+    def _parse_fields(self):
+        fields = []
+        self._match(TokenKind.LParen)
+        while self.cur_token.kind == TokenKind.TypeId:
+            typename = self._advance()
+            is_seq, is_opt = self._parse_optional_field_quantifier()
+            id = (self._advance() if self.cur_token.kind in self._id_kinds
+                                  else None)
+            fields.append(Field(typename, id, seq=is_seq, opt=is_opt))
+            if self.cur_token.kind == TokenKind.RParen:
+                break
+            elif self.cur_token.kind == TokenKind.Comma:
+                self._advance()
+        self._match(TokenKind.RParen)
+        return fields
+
+    def _parse_optional_fields(self):
+        if self.cur_token.kind == TokenKind.LParen:
+            return self._parse_fields()
+        else:
+            return None
+
+    def _parse_optional_attributes(self):
+        if self._at_keyword(&#39;attributes&#39;):
+            self._advance()
+            return self._parse_fields()
+        else:
+            return None
+
+    def _parse_optional_field_quantifier(self):
+        is_seq, is_opt = False, False
+        if self.cur_token.kind == TokenKind.Asterisk:
+            is_seq = True
+            self._advance()
+        elif self.cur_token.kind == TokenKind.Question:
+            is_opt = True
+            self._advance()
+        return is_seq, is_opt
+
+    def _advance(self):
+        &quot;&quot;&quot; Return the value of the current token and read the next one into
+            self.cur_token.
+        &quot;&quot;&quot;
+        cur_val = None if self.cur_token is None else self.cur_token.value
+        try:
+            self.cur_token = next(self._tokenizer)
+        except StopIteration:
+            self.cur_token = None
+        return cur_val
+
+    _id_kinds = (TokenKind.ConstructorId, TokenKind.TypeId)
+
+    def _match(self, kind):
+        &quot;&quot;&quot;The &#39;match&#39; primitive of RD parsers.
+
+        * Verifies that the current token is of the given kind (kind can
+          be a tuple, in which the kind must match one of its members).
+        * Returns the value of the current token
+        * Reads in the next token
+        &quot;&quot;&quot;
+        if (isinstance(kind, tuple) and self.cur_token.kind in kind or
+            self.cur_token.kind == kind
+            ):
+            value = self.cur_token.value
+            self._advance()
+            return value
+        else:
+            raise ASDLSyntaxError(
+                &#39;Unmatched {} (found {})&#39;.format(kind, self.cur_token.kind),
+                self.cur_token.lineno)
+
+    def _at_keyword(self, keyword):
+        return (self.cur_token.kind == TokenKind.TypeId and
+                self.cur_token.value == keyword)</code></pre><p>The usage:</p>
+<pre><code>import asdl
+asdl_ast = asdl.parse(&#39;Python.asdl&#39;)
+print(asdl_ast)</code></pre><p>The ASDL AST of <a href="https://github.com/python/cpython/blob/v3.8.0/Parser/Python.asdl">Parser/Python.asdl</a>:</p>
+<pre><code>Module(Python, [
+  Type(mod
+    Sum([
+      Constructor(Module, [
+        Field(stmt, body, seq=True),
+        Field(type_ignore, type_ignores, seq=True),
+      ]),
+      Constructor(Interactive, [
+        Field(stmt, body, seq=True),
+      ]),
+      Constructor(Expression, [
+        Field(expr, body),
+      ]),
+      Constructor(FunctionType, [
+        Field(expr, argtypes, seq=True),
+        Field(expr, returns),
+      ]),
+      Constructor(Suite, [
+        Field(stmt, body, seq=True),
+      ]),
+    ])
+  ),
+  Type(stmt
+    Sum([
+      Constructor(FunctionDef, [
+        Field(identifier, name),
+        Field(arguments, args),
+        Field(stmt, body, seq=True),
+        Field(expr, decorator_list, seq=True),
+        Field(expr, returns, opt=True),
+        Field(string, type_comment, opt=True),
+      ]),
+      Constructor(AsyncFunctionDef, [
+        Field(identifier, name),
+        Field(arguments, args),
+        Field(stmt, body, seq=True),
+        Field(expr, decorator_list, seq=True),
+        Field(expr, returns, opt=True),
+        Field(string, type_comment, opt=True),
+      ]),
+      Constructor(ClassDef, [
+        Field(identifier, name),
+        Field(expr, bases, seq=True),
+        Field(keyword, keywords, seq=True),
+        Field(stmt, body, seq=True),
+        Field(expr, decorator_list, seq=True),
+      ]),
+      Constructor(Return, [
+        Field(expr, value, opt=True),
+      ]),
+      Constructor(Delete, [
+        Field(expr, targets, seq=True),
+      ]),
+      Constructor(Assign, [
+        Field(expr, targets, seq=True),
+        Field(expr, value),
+        Field(string, type_comment, opt=True),
+      ]),
+      Constructor(AugAssign, [
+        Field(expr, target),
+        Field(operator, op),
+        Field(expr, value),
+      ]),
+      Constructor(AnnAssign, [
+        Field(expr, target),
+        Field(expr, annotation),
+        Field(expr, value, opt=True),
+        Field(int, simple),
+      ]),
+      Constructor(For, [
+        Field(expr, target),
+        Field(expr, iter),
+        Field(stmt, body, seq=True),
+        Field(stmt, orelse, seq=True),
+        Field(string, type_comment, opt=True),
+      ]),
+      Constructor(AsyncFor, [
+        Field(expr, target),
+        Field(expr, iter),
+        Field(stmt, body, seq=True),
+        Field(stmt, orelse, seq=True),
+        Field(string, type_comment, opt=True),
+      ]),
+      Constructor(While, [
+        Field(expr, test),
+        Field(stmt, body, seq=True),
+        Field(stmt, orelse, seq=True),
+      ]),
+      Constructor(If, [
+        Field(expr, test),
+        Field(stmt, body, seq=True),
+        Field(stmt, orelse, seq=True),
+      ]),
+      Constructor(With, [
+        Field(withitem, items, seq=True),
+        Field(stmt, body, seq=True),
+        Field(string, type_comment, opt=True),
+      ]),
+      Constructor(AsyncWith, [
+        Field(withitem, items, seq=True),
+        Field(stmt, body, seq=True),
+        Field(string, type_comment, opt=True),
+      ]),
+      Constructor(Raise, [
+        Field(expr, exc, opt=True),
+        Field(expr, cause, opt=True),
+      ]),
+      Constructor(Try, [
+        Field(stmt, body, seq=True),
+        Field(excepthandler, handlers, seq=True),
+        Field(stmt, orelse, seq=True),
+        Field(stmt, finalbody, seq=True),
+      ]),
+      Constructor(Assert, [
+        Field(expr, test),
+        Field(expr, msg, opt=True),
+      ]),
+      Constructor(Import, [
+        Field(alias, names, seq=True),
+      ]),
+      Constructor(ImportFrom, [
+        Field(identifier, module, opt=True),
+        Field(alias, names, seq=True),
+        Field(int, level, opt=True),
+      ]),
+      Constructor(Global, [
+        Field(identifier, names, seq=True),
+      ]),
+      Constructor(Nonlocal, [
+        Field(identifier, names, seq=True),
+      ]),
+      Constructor(Expr, [
+        Field(expr, value),
+      ]),
+      Constructor(Pass, []),
+      Constructor(Break, []),
+      Constructor(Continue, []),
+    ],
+    [
+      Field(int, lineno),
+      Field(int, col_offset),
+      Field(int, end_lineno, opt=True),
+      Field(int, end_col_offset, opt=True),
+    ])
+  ),
+  Type(expr
+    Sum([
+      Constructor(BoolOp, [
+        Field(boolop, op),
+        Field(expr, values, seq=True),
+      ]),
+      Constructor(NamedExpr, [
+        Field(expr, target),
+        Field(expr, value),
+      ]),
+      Constructor(BinOp, [
+        Field(expr, left),
+        Field(operator, op),
+        Field(expr, right),
+      ]),
+      Constructor(UnaryOp, [
+        Field(unaryop, op),
+        Field(expr, operand),
+      ]),
+      Constructor(Lambda, [
+        Field(arguments, args),
+        Field(expr, body),
+      ]),
+      Constructor(IfExp, [
+        Field(expr, test),
+        Field(expr, body),
+        Field(expr, orelse),
+      ]),
+      Constructor(Dict, [
+        Field(expr, keys, seq=True),
+        Field(expr, values, seq=True),
+      ]),
+      Constructor(Set, [
+        Field(expr, elts, seq=True),
+      ]),
+      Constructor(ListComp, [
+        Field(expr, elt),
+        Field(comprehension, generators, seq=True),
+      ]),
+      Constructor(SetComp, [
+        Field(expr, elt),
+        Field(comprehension, generators, seq=True),
+      ]),
+      Constructor(DictComp, [
+        Field(expr, key),
+        Field(expr, value),
+        Field(comprehension, generators, seq=True),
+      ]),
+      Constructor(GeneratorExp, [
+        Field(expr, elt),
+        Field(comprehension, generators, seq=True),
+      ]),
+      Constructor(Await, [
+        Field(expr, value),
+      ]),
+      Constructor(Yield, [
+        Field(expr, value, opt=True),
+      ]),
+      Constructor(YieldFrom, [
+        Field(expr, value),
+      ]),
+      Constructor(Compare, [
+        Field(expr, left),
+        Field(cmpop, ops, seq=True),
+        Field(expr, comparators, seq=True),
+      ]),
+      Constructor(Call, [
+        Field(expr, func),
+        Field(expr, args, seq=True),
+        Field(keyword, keywords, seq=True),
+      ]),
+      Constructor(FormattedValue, [
+        Field(expr, value),
+        Field(int, conversion, opt=True),
+        Field(expr, format_spec, opt=True),
+      ]),
+      Constructor(JoinedStr, [
+        Field(expr, values, seq=True),
+      ]),
+      Constructor(Constant, [
+        Field(constant, value),
+        Field(string, kind, opt=True),
+      ]),
+      Constructor(Attribute, [
+        Field(expr, value),
+        Field(identifier, attr),
+        Field(expr_context, ctx),
+      ]),
+      Constructor(Subscript, [
+        Field(expr, value),
+        Field(slice, slice),
+        Field(expr_context, ctx),
+      ]),
+      Constructor(Starred, [
+        Field(expr, value),
+        Field(expr_context, ctx),
+      ]),
+      Constructor(Name, [
+        Field(identifier, id),
+        Field(expr_context, ctx),
+      ]),
+      Constructor(List, [
+        Field(expr, elts, seq=True),
+        Field(expr_context, ctx),
+      ]),
+      Constructor(Tuple, [
+        Field(expr, elts, seq=True),
+        Field(expr_context, ctx),
+      ]),
+    ],
+    [
+      Field(int, lineno),
+      Field(int, col_offset),
+      Field(int, end_lineno, opt=True),
+      Field(int, end_col_offset, opt=True),
+    ])
+  ),
+  Type(expr_context
+    Sum([
+      Constructor(Load, []),
+      Constructor(Store, []),
+      Constructor(Del, []),
+      Constructor(AugLoad, []),
+      Constructor(AugStore, []),
+      Constructor(Param, []),
+    ])
+  ),
+  Type(slice
+    Sum([
+      Constructor(Slice, [
+        Field(expr, lower, opt=True),
+        Field(expr, upper, opt=True),
+        Field(expr, step, opt=True),
+      ]),
+      Constructor(ExtSlice, [
+        Field(slice, dims, seq=True),
+      ]),
+      Constructor(Index, [
+        Field(expr, value),
+      ]),
+    ])
+  ),
+  Type(boolop
+    Sum([
+      Constructor(And, []),
+      Constructor(Or, []),
+    ])
+  ),
+  Type(operator
+    Sum([
+      Constructor(Add, []),
+      Constructor(Sub, []),
+      Constructor(Mult, []),
+      Constructor(MatMult, []),
+      Constructor(Div, []),
+      Constructor(Mod, []),
+      Constructor(Pow, []),
+      Constructor(LShift, []),
+      Constructor(RShift, []),
+      Constructor(BitOr, []),
+      Constructor(BitXor, []),
+      Constructor(BitAnd, []),
+      Constructor(FloorDiv, []),
+    ])
+  ),
+  Type(unaryop
+    Sum([
+      Constructor(Invert, []),
+      Constructor(Not, []),
+      Constructor(UAdd, []),
+      Constructor(USub, []),
+    ])
+  ),
+  Type(cmpop
+    Sum([
+      Constructor(Eq, []),
+      Constructor(NotEq, []),
+      Constructor(Lt, []),
+      Constructor(LtE, []),
+      Constructor(Gt, []),
+      Constructor(GtE, []),
+      Constructor(Is, []),
+      Constructor(IsNot, []),
+      Constructor(In, []),
+      Constructor(NotIn, []),
+    ])
+  ),
+  Type(comprehension
+    Product([
+      Field(expr, target),
+      Field(expr, iter),
+      Field(expr, ifs, seq=True),
+      Field(int, is_async),
+    ])
+  ),
+  Type(excepthandler
+    Sum([
+      Constructor(ExceptHandler, [
+        Field(expr, type, opt=True),
+        Field(identifier, name, opt=True),
+        Field(stmt, body, seq=True),
+      ]),
+    ],
+    [
+      Field(int, lineno),
+      Field(int, col_offset),
+      Field(int, end_lineno, opt=True),
+      Field(int, end_col_offset, opt=True),
+    ])
+  ),
+  Type(arguments
+    Product([
+      Field(arg, posonlyargs, seq=True),
+      Field(arg, args, seq=True),
+      Field(arg, vararg, opt=True),
+      Field(arg, kwonlyargs, seq=True),
+      Field(expr, kw_defaults, seq=True),
+      Field(arg, kwarg, opt=True),
+      Field(expr, defaults, seq=True),
+    ])
+  ),
+  Type(arg
+    Product([
+      Field(identifier, arg),
+      Field(expr, annotation, opt=True),
+      Field(string, type_comment, opt=True),
+    ],
+    [
+      Field(int, lineno),
+      Field(int, col_offset),
+      Field(int, end_lineno, opt=True),
+      Field(int, end_col_offset, opt=True),
+    ])
+  ),
+  Type(keyword
+    Product([
+      Field(identifier, arg, opt=True),
+      Field(expr, value),
+    ])
+  ),
+  Type(alias
+    Product([
+      Field(identifier, name),
+      Field(identifier, asname, opt=True),
+    ])
+  ),
+  Type(withitem
+    Product([
+      Field(expr, context_expr),
+      Field(expr, optional_vars, opt=True),
+    ])
+  ),
+  Type(type_ignore
+    Sum([
+      Constructor(TypeIgnore, [
+        Field(int, lineno),
+        Field(string, tag),
+      ]),
+    ])
+  ),
+])</code></pre><h4 id="compile-asdl-ast-to-c-code"><a class="anchor" href="#compile-asdl-ast-to-c-code"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Compile ASDL AST to C code</h4><p><a href="https://github.com/python/cpython/blob/v3.8.0/Parser/asdl_c.py">Parser/asdl_c.py</a> compiles the ASDL AST to Python&#39;s AST nodes&#39; C data structures and processing functions, stored in files <a href="https://github.com/python/cpython/blob/v3.8.0/Include/Python-ast.h">Include/Python-ast.h</a> and <a href="https://github.com/python/cpython/blob/v3.8.0/Python/Python-ast.c">Python/Python-ast.c</a>.</p>
+<p>The usage:</p>
+<pre><code>python Parser/asdl_c.py -h Include/Python-ast.h Parser/Python.asdl
+
+python Parser/asdl_c.py -h Python/Python-ast.c Parser/Python.asdl</code></pre><p>For example, the ASDL AST nodes</p>
+<pre><code>Type(mod
+  Sum([
+    Constructor(Module, [
+      Field(stmt, body, seq=True),
+      Field(type_ignore, type_ignores, seq=True),
+    ]),
+    Constructor(Interactive, [
+      Field(stmt, body, seq=True),
+    ]),
+    Constructor(Expression, [
+      Field(expr, body),
+    ]),
+    Constructor(FunctionType, [
+      Field(expr, argtypes, seq=True),
+      Field(expr, returns),
+    ]),
+    Constructor(Suite, [
+      Field(stmt, body, seq=True),
+    ]),
+  ])
+)</code></pre><p>are compiled to the C data structures:</p>
+<pre><code>enum _mod_kind {Module_kind=1, Interactive_kind=2, Expression_kind=3,
+                 FunctionType_kind=4, Suite_kind=5};
+struct _mod {
+    enum _mod_kind kind;
+    union {
+        struct {
+            asdl_seq *body;
+            asdl_seq *type_ignores;
+        } Module;
+
+        struct {
+            asdl_seq *body;
+        } Interactive;
+
+        struct {
+            expr_ty body;
+        } Expression;
+
+        struct {
+            asdl_seq *argtypes;
+            expr_ty returns;
+        } FunctionType;
+
+        struct {
+            asdl_seq *body;
+        } Suite;
+
+    } v;
+};</code></pre><p>There are AST node constructor functions defined in <a href="https://github.com/python/cpython/blob/v3.8.0/Python/Python-ast.c#L1196">Python/Python-ast.c</a>.
+And there are constructor macros defined in <a href="https://github.com/python/cpython/blob/v3.8.0/Include/Python-ast.h#L477">Include/Python-ast.h</a>. Notice these macros change the corresponding constructor functions&#39; name, e.g. the function name <code>Module</code> is changed to <code>_Py_Module</code>.</p>
+<h4 id="convert-cst-to-ast"><a class="anchor" href="#convert-cst-to-ast"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Convert CST to AST</h4><p><a href="https://github.com/python/cpython/blob/v3.8.0/Python/ast.c#L772">Python/ast.c::PyAST_FromNodeObject</a> converts a CST to AST, creating AST nodes using these constructor macros:</p>
+<pre><code>ast.c--PyAST_FromNodeObject
+
+  switch on CST node type
+  case file_input:
+    # Grammar rules:
+    # file_input: (NEWLINE | stmt)* ENDMARKER
+    # stmt: simple_stmt | compound_stmt
+    # simple_stmt : small_stmt(&#39;;&#39; small_stmt) * [&#39;;&#39;] NEWLINE
+
+    asdl.c--_Py_asdl_seq_new
+
+    for each `small_stmt` or `compound_stmt`:
+      ast.c--ast_for_stmt
+
+      asdl.h--asdl_seq_SET
+
+    asdl.c--_Py_asdl_seq_new
+
+    for each type ignores:
+      # Create AST node.
+      Python-ast.h--TypeIgnore
+
+      asdl.h--asdl_seq_SET
+
+    # Create AST node.
+    Python-ast.h--Module
+
+  case eval_input:
+    ...
+  case single_input:
+    ...
+  case func_type_input:
+    ...</code></pre><h4 id="expose-ast-to-python-code"><a class="anchor" href="#expose-ast-to-python-code"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Expose AST to Python code</h4><p><a href="https://github.com/python/cpython/blob/v3.8.0/Python/Python-ast.c#L8771">Python/ast.c</a> also defines the <code>_ast</code> module, which exposes AST objects to Python code.</p>
+<p><a href="https://github.com/python/cpython/blob/v3.8.0/Python/Python-ast.c#L8984">Python/Python-ast.c::PyAST_mod2obj</a> converts an AST (C) node to AST (Python) object.</p>
+<p><a href="https://github.com/python/cpython/blob/v3.8.0/Python/Python-ast.c#L8992">Python/Python-ast.c::PyAST_obj2mod</a> converts an AST (Python) object to (C) node.</p>
+<p>The Python function <a href="https://github.com/python/cpython/blob/v3.8.0/Lib/ast.py#L30">ast.parse</a> parses source code to an AST object.</p>
+<pre><code>ast.parse
+
+  builtins.compile
+
+    bltinmodule.c.h--builtin_compile
+
+      bltinmodule.c--builtin_compile_impl
+
+        pythonrun.c--Py_CompileStringObject
+
+          pythonrun.c--PyParser_ASTFromStringObject
+
+          Python-ast.c--PyAST_mod2obj</code></pre>
+  </article>
+  <!-- post_content -->
+
+  <div class="prev_next_posts_block">
+    <div>
+      <span class="prev_post_prompt">Previous Post: </span><a class="prev_post_link" href="/blog/reposts/why-windows-ios-are-smooth-but-linux-android-are-laggy">为什么Windows/iOS操作很流畅而Linux/Android却很卡顿呢</a><span class="prev_post_date">(2019.10.26)</span>
+    </div>
+    <div>
+      <span class="next_post_prompt">Next Post: </span><a class="next_post_link" href="/blog/posts/python-class-method-closure">Python class method closure</a><span class="next_post_date">(2019.10.29)</span>
+    </div>
+  </div>
+
+  <!-- Special syntax below is for Vue rendering on the client side -->
+  <div v-cloak id="post_comments_block" class="post_comments_block">
+    <p class="title">Comments:</p>
+    <div class="write_comment_block">
+      <div class="comment_info_block">
+        <input v-model="commenter_name" class="commenter_name" placeholder="Your name"></input>
+        <div class="replyto_block">
+          <span>Reply to:</span>
+          <select v-model="replyto_comment_id">
+             <!-- `0` is a special value meaning no replyto -->
+             <option disabled value="0"></option>
+             <option v-for="comment_id in comment_ids" :value="comment_id">{{comment_id}}</option>
+          </select>
+        </div>
+      </div>
+      <textarea v-model="comment_content" class="comment_content" placeholder="Comment"></textarea>
+      <div><input v-on:click="comment_submit_button_on_click" class="submit_button" type="button" value="Submit"></input></div>
+    </div>
+    <ul>
+        <li v-for="comment_info in comment_infos" v-bind:class="comment_info.is_admin ? 'is_admin' : ''">
+            <a v-bind:id="'comment-' + comment_info.comment_id"
+              v-bind:href="'#comment-' + comment_info.comment_id" class="comment_id">{{comment_info.comment_id}}</a>
+            <div class="comment_content">{{comment_info.comment_content}}</div>
+            <div class="comment_info">
+              <span class="commenter_name">{{comment_info.commenter_name}}</span>
+              <span class="create_time">{{comment_info.create_time}}</span>
+              <template v-if="comment_info.replyto_comment_id > 0">
+              <span>to <a v-bind:href="'#comment-' + comment_info.replyto_comment_id">comment-{{comment_info.replyto_comment_id}}</a></span>
+              </template>
+              <a v-bind:data-comment-id="comment_info.comment_id" v-on:click="comment_reply_button_on_click" class="reply_button" href="#post_comments_block">Reply to this</a>
+            </div>
+        </li>
+    </ul>
+  </div>
+  
+
+  <!-- post_toc -->
+  <div id="post_toc_block" class="post_toc_block is_hidden">
+    <a v-on:click="post_toc_hide_link_on_click" data-shown-text="Hide" data-hidden-text="TOC" class="hide_link" href="javascript:void(0)">TOC</a>
+    <span class="title">Contents</span>
+  </div>
+  <!-- post_toc -->
+
+  <!-- back_to_top -->
+  <div id="back_to_top_block" class="back_to_top_block is_hidden">
+    <a v-on:click="back_to_top_button_on_click">
+      <div class="arrow_shape">
+        <div class="arrow_head"></div>
+        <div class="arrow_body"></div>
+      </div>
+    </a>
+  </div>
+  <!-- back_to_top -->
+
+  <div id="post_id" style="display: none;">49</div>
+  <!-- main_inner -->
+</main>
+<!-- main -->
+
+<!-- back_to_top -->
+
+<!-- footer -->
+<footer>
+  <!-- footer_inner -->
+  <span>This blog is powered by my own project <a href="https://github.com/AoiKuiyuyou/AoikSeldomStaticSite">AoikSeldomStaticSite</a>.</span>
+  <!-- footer_inner -->
+</footer>
+<!-- footer -->
+
+<!-- bottom_scripts -->
+
+<script type="text/javascript" src="/blog/libs_outer/jquery/3.3.1/jquery.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/vue/2.5.16/vue.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/toastr/2.1.3/toastr.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/highlight/9.12.0/highlight.min.js"></script>
+<script type="text/javascript" src="/blog/libs_inner/base/post.js"></script>
+<!-- bottom_scripts -->
+
+</div>
+<!-- vue_app -->
+
+</body>
+</html>

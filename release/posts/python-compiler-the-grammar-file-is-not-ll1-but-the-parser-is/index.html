@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- head -->
+<head>
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-117972998-1"></script>
+  <script>
+    var hostname = window.location.hostname;
+    if (hostname && hostname !== '127.0.0.1' && hostname !== 'localhost' && hostname !== 'aoik.me.local') {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-117972998-1');
+    }
+  </script>
+  <!-- Google Analytics -->
+
+  <!-- head_meta -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <!-- head_meta -->
+
+  <!-- head_title -->
+  <title>Python's compiler - the grammar file is not LL(1) but the parser is</title>
+  <!-- head_title -->
+
+  <!-- head_links -->
+  <link rel="stylesheet" href="/blog/libs_outer/bootstrap/4.0.0/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/blog/libs_outer/github-markdown-css/2.10.0/github-markdown.css">
+  <link rel="stylesheet" href="/blog/libs_inner/base/base.css">
+  <!-- head_links -->
+
+  <!-- head_links2 -->
+
+<link rel="stylesheet" href="/blog/libs_outer/toastr/2.1.3/toastr.min.css">
+<link rel="stylesheet" href="/blog/libs_outer/highlight/9.12.0/highlight.min.css">
+  <!-- head_links2 -->
+
+  <!-- head_styles -->
+  <!-- head_styles -->
+</head>
+<!-- head -->
+
+<body>
+<div id="vue_app">
+
+<!-- header -->
+<header>
+  <!-- header_inner -->
+  <!-- logo -->
+  <a class="logo_block" href="/blog"><span class="logo_text">Aoik</span></a>
+  <!-- nav -->
+  <nav class="nav_block">
+    <div class="nav_table">
+      <a class="current" href="/blog/posts"><span>Posts</span></a>
+      <a class="" href="/blog/reposts"><span>Reposts</span></a>
+      <a class="" href="/blog/tags"><span>Tags</span></a>
+      <a target="_blank" href="https://github.com/AoiKuiyuyou/Aoik/blob/master/README.md"><span>Github</span></a>
+      <a target="_blank" href="http://aoikuiyuyou.github.io/me.html"><span>Resume</span></a>
+    </div>
+  </nav>
+  <!-- header_inner -->
+</header>
+<!-- header -->
+
+<!-- main -->
+<main>
+  <!-- main_inner -->
+  
+  <!-- breadcrumbs -->
+  <div class="breadcrumbs_block">
+    <a href="/blog">Home</a>
+    <span class="sep">&gt;</span>
+    <a href="/blog/posts">Posts</a>
+    <span class="sep">&gt;</span>
+    <a href="">This</a>
+  </div>
+  <!-- breadcrumbs -->
+
+
+
+  <!-- post_info -->
+  <div class="post_info_block">
+    <div class="tags_block">
+    <a class="tag" href="/blog/tags/python">python</a>
+    <a class="tag" href="/blog/tags/compiler">compiler</a>
+    <a class="tag" href="/blog/tags/parser">parser</a>
+    <a class="tag" href="/blog/tags/parser-generator">parser-generator</a>
+    <a class="tag" href="/blog/tags/pgen">pgen</a>
+    </div>
+    <div class="fields_block">
+      <span class="author">Aoik,</span>
+      <span class="create_time">2019.05.12</span>
+    </div>
+  </div>
+  <!-- post_info -->
+
+  <!-- post_content -->
+  <!-- `v-pre` aims to skip Vue parsing -->
+  <article v-pre class="post_content_block markdown-body">
+  <h1 id="python-39-s-compiler-the-grammar-file-is-not-ll-1-but-the-parser-is">Python&#39;s compiler - the grammar file is not LL(1) but the parser is</h1><p>Python&#39;s compiler series:</p>
+<ul>
+<li><a href="/blog/posts/python-3.8.0-execution-flow">Python 3.8.0 execution flow</a></li>
+<li><a href="/blog/posts/python-compiler-from-grammar-to-dfa">Python&#39;s compiler - from grammar to DFA</a></li>
+<li><a href="/blog/posts/python-compiler-the-grammar-file-is-not-ll1-but-the-parser-is">Python&#39;s compiler - the grammar file is not LL(1) but the parser is</a></li>
+<li><a href="/blog/posts/python-compiler-from-tokens-to-cst">Python&#39;s compiler - from tokens to CST</a></li>
+<li><a href="/blog/posts/python-compiler-from-cst-to-ast">Python&#39;s compiler - from CST to AST</a></li>
+</ul>
+<p><br>Python&#39;s grammar is LL(1), but its <a href="https://github.com/python/cpython/blob/v3.8.0/Grammar/Grammar">grammar file</a> is not. Take one rule in the grammar file
+for example:</p>
+<pre><code>arglist: argument (&#39;,&#39; argument)* [&#39;,&#39;]</code></pre><p>This rule aims to parse one or more arguments, separated by comma, and optionally ended by a trailing comma. Although the rule is easy to understand, it does not work well with a regular LL(1) parser. The <code>(&#39;,&#39; argument)*</code> and <code>[&#39;,&#39;]</code> parts are both optional, and both start with the comma token. With a regular LL(1) parser, after parsing the first <code>argument</code> non-terminal symbol, as long as there is a comma token, the parser will enter the <code>(&#39;,&#39; argument)*</code> part, and will expect a following <code>argument</code> symbol. The <code>[&#39;,&#39;]</code> part will never be entered, and as a result trailing comma syntax like <code>[1, 2,]</code> can not be supported.</p>
+<p>But Python does support the trailing comma syntax. How is that possible? The answer is that Python uses a DFA-based (Pushdown Automata, more precisely) parser. The grammar file is first converted to NFA using the <a href="https://en.wikipedia.org/wiki/Thompson%27s_construction">McNaughton-Yamada-Thompson algorithm</a>. Then the NFA is converted to DFA using the <a href="https://en.wikipedia.org/wiki/Powerset_construction">powerset construction algorithm</a> (a.k.a. subset construction).</p>
+<p>Let&#39;s say the starting and ending NFA nodes for the first <code>argument</code> in the rule above is <strong>a</strong> and <strong>b</strong>, the starting and ending NFA nodes for the <code>(&#39;,&#39; argument)*</code> part is <strong>c</strong> and <strong>d</strong>, and the starting and ending NFA nodes for the <code>[&#39;,&#39;]</code> part is <strong>e</strong> and <strong>f</strong>. There are epsilon (i.e. empty, not consuming a token) arcs b-&gt;c and d-&gt;e. And because both the <code>(&#39;,&#39; argument)*</code> and <code>[&#39;,&#39;]</code> parts are optional, there are epsilon arcs c-&gt;d, e-&gt;f, and thus b-&gt;e, b-&gt;f, d-&gt;f.</p>
+<p>For input <code>1</code>, the parsing transition is a--&gt;b-&gt;f. (<code>--&gt;</code> means non-epsilon transition.)</p>
+<p>For input <code>1,</code>, the parsing transition is a--&gt;b-&gt;e--&gt;f.</p>
+<p>For input <code>1, 2</code>, the parsing transition is a--&gt;b-&gt;c--&gt;d-&gt;f.</p>
+<p>For input <code>1, 2,</code>, the parsing transition is a--&gt;b-&gt;c--&gt;d-&gt;e--&gt;f.</p>
+<p>As we can see, after converting to NFA, the rule works as intended.</p>
+<p>We can use Python&#39;s parser generator <a href="https://github.com/python/cpython/tree/v3.8.0/Parser/pgen">pgen</a> to generate the DFA to verify what is described above is true. First create a simplified grammar file <strong>grammar.txt</strong> with the following content:</p>
+<pre><code>arglist: NUMBER (&#39;,&#39; NUMBER)*  [&#39;,&#39;]</code></pre><p>In <a href="https://github.com/python/cpython/tree/v3.8.0">Python 3.8.0</a>&#39;s repository directory, run:</p>
+<pre><code># Linux
+export PYTHONPATH=Parser
+
+# Windows
+SET PYTHONPATH=Parser
+
+python -m pgen grammar.txt Grammar/Tokens graminit.h graminit.c</code></pre><p>The resulting <strong>graminit.c</strong> file&#39;s content is:</p>
+<pre><code>/* Generated by Parser/pgen */
+
+#include &quot;pgenheaders.h&quot;
+#include &quot;grammar.h&quot;
+grammar _PyParser_Grammar;
+static arc arcs_0_0[1] = {
+    {2, 1},
+};
+static arc arcs_0_1[2] = {
+    {3, 2},
+    {0, 1},
+};
+static arc arcs_0_2[2] = {
+    {2, 1},
+    {0, 2},
+};
+static state states_0[3] = {
+    {1, arcs_0_0},
+    {2, arcs_0_1},
+    {2, arcs_0_2},
+};
+static dfa dfas[1] = {
+    {256, &quot;arglist&quot;, 3, states_0,
+     &quot;\004&quot;},
+};
+static label labels[4] = {
+    {0, &quot;EMPTY&quot;},
+    {256, 0},
+    {2, 0},
+    {12, 0},
+};
+grammar _PyParser_Grammar = {
+    1,
+    dfas,
+    {4, labels},
+    256
+};</code></pre><p>The DFA has only one state, i.e. <code>states_0</code> for the non-terminal symbol <code>arglist</code>. <code>states_0</code> has 3 nodes <code>arcs_0_0</code>, <code>arcs_0_1</code>, and <code>arcs_0_2</code>.</p>
+<p>The <code>{2, 1}</code> in <code>arcs_0_0</code> means in the current node, if the current token is <code>labels[2]</code>, then goes to state <code>arcs_0_1</code>. The <code>{0, 1}</code> in <code>arcs_0_1</code> means it is a finishable node.</p>
+<p>The <code>labels</code> array contains labels for all the tokens and non-terminal symbols. <code>0</code> is a special label to mean the node is finishable. <code>256</code> is for <code>arglist</code>. According to <a href="https://github.com/python/cpython/blob/v3.8.0/Grammar/Tokens">Grammar/Tokens</a>, <code>2</code> is for NUMBER, <code>12</code> is for COMMA.</p>
+<p>In <code>_PyParser_Grammar</code>, the <code>256</code> means the starting non-terminal symbol is <code>arglist</code>, which corresponds to state <code>states_0</code>, thus the starting node is <code>states_0</code>&#39;s first node <code>arcs_0_0</code>.</p>
+<p>For input <code>1</code>, the parsing transition is: arcs_0_0 -&gt; labels[2] (NUMBER) -&gt; arcs_0_1 -&gt; labels[0] (finish).</p>
+<p>For input <code>1,</code>, the parsing transition is: arcs_0_0 -&gt; labels[2] (NUMBER) -&gt; arcs_0_1 -&gt; labels[3] (COMMA) -&gt; arcs_0_2 -&gt; labels[0] (finish).</p>
+<p>For input <code>1, 2</code>, the parsing transition is: arcs_0_0 -&gt; labels[2] (NUMBER) -&gt; arcs_0_1 -&gt; labels[3] (COMMA) -&gt; arcs_0_2 -&gt; labels[2] (NUMBER) -&gt; arcs_0_1 -&gt; labels[0] (finish).</p>
+<p>For input <code>1, 2,</code>, the parsing transition is: arcs_0_0 -&gt; labels[2] (NUMBER) -&gt; arcs_0_1 -&gt; labels[3] (COMMA) -&gt; arcs_0_2 -&gt; labels[2] (NUMBER) -&gt; arcs_0_1 -&gt; labels[3] (COMMA) -&gt; arcs_0_2 -&gt; labels[0] (finish).</p>
+<p>One might wonder, nodes like <code>arcs_0_1</code> and <code>arcs_0_2</code> are finishable, but can also transit to another node. So how does the parser decide to finish or to continue when in a finishable node? The answer is in the <a href="https://github.com/python/cpython/blob/v3.8.0/Parser/parser.c#L231">PyParser_AddToken</a> function that, given a token, transits the DFA. It decides to finish parsing for a non-terminal symbol only if the current node is finishable and can not transit to another node with the current token.</p>
+<p>Back to the start it is stated Python&#39;s grammar (not the grammar file) is LL(1). Is it true? My opinion is that because Python&#39;s parser parses by transiting DFA and creating CST nodes along the way, and because the <a href="https://github.com/python/cpython/blob/v3.8.0/Parser/parser.c#L231">PyParser_AddToken</a> function that transits the DFA only peeks one token ahead, it is LL(1).</p>
+
+  </article>
+  <!-- post_content -->
+
+  <div class="prev_next_posts_block">
+    <div>
+      <span class="prev_post_prompt">Previous Post: </span><a class="prev_post_link" href="/blog/posts/python-compiler-from-grammar-to-dfa">Python's compiler - from grammar to dfa</a><span class="prev_post_date">(2019.05.06)</span>
+    </div>
+    <div>
+      <span class="next_post_prompt">Next Post: </span><a class="next_post_link" href="/blog/posts/python-convert-between-bytes-and-hex-octal-representation">Python convert between bytes and hex octal representation</a><span class="next_post_date">(2019.07.18)</span>
+    </div>
+  </div>
+
+  <!-- Special syntax below is for Vue rendering on the client side -->
+  <div v-cloak id="post_comments_block" class="post_comments_block">
+    <p class="title">Comments:</p>
+    <div class="write_comment_block">
+      <div class="comment_info_block">
+        <input v-model="commenter_name" class="commenter_name" placeholder="Your name"></input>
+        <div class="replyto_block">
+          <span>Reply to:</span>
+          <select v-model="replyto_comment_id">
+             <!-- `0` is a special value meaning no replyto -->
+             <option disabled value="0"></option>
+             <option v-for="comment_id in comment_ids" :value="comment_id">{{comment_id}}</option>
+          </select>
+        </div>
+      </div>
+      <textarea v-model="comment_content" class="comment_content" placeholder="Comment"></textarea>
+      <div><input v-on:click="comment_submit_button_on_click" class="submit_button" type="button" value="Submit"></input></div>
+    </div>
+    <ul>
+        <li v-for="comment_info in comment_infos" v-bind:class="comment_info.is_admin ? 'is_admin' : ''">
+            <a v-bind:id="'comment-' + comment_info.comment_id"
+              v-bind:href="'#comment-' + comment_info.comment_id" class="comment_id">{{comment_info.comment_id}}</a>
+            <div class="comment_content">{{comment_info.comment_content}}</div>
+            <div class="comment_info">
+              <span class="commenter_name">{{comment_info.commenter_name}}</span>
+              <span class="create_time">{{comment_info.create_time}}</span>
+              <template v-if="comment_info.replyto_comment_id > 0">
+              <span>to <a v-bind:href="'#comment-' + comment_info.replyto_comment_id">comment-{{comment_info.replyto_comment_id}}</a></span>
+              </template>
+              <a v-bind:data-comment-id="comment_info.comment_id" v-on:click="comment_reply_button_on_click" class="reply_button" href="#post_comments_block">Reply to this</a>
+            </div>
+        </li>
+    </ul>
+  </div>
+  
+
+  <!-- post_toc -->
+  <div id="post_toc_block" class="post_toc_block is_hidden">
+    <a v-on:click="post_toc_hide_link_on_click" data-shown-text="Hide" data-hidden-text="TOC" class="hide_link" href="javascript:void(0)">TOC</a>
+    <span class="title">Contents</span>
+  </div>
+  <!-- post_toc -->
+
+  <!-- back_to_top -->
+  <div id="back_to_top_block" class="back_to_top_block is_hidden">
+    <a v-on:click="back_to_top_button_on_click">
+      <div class="arrow_shape">
+        <div class="arrow_head"></div>
+        <div class="arrow_body"></div>
+      </div>
+    </a>
+  </div>
+  <!-- back_to_top -->
+
+  <div id="post_id" style="display: none;">31</div>
+  <!-- main_inner -->
+</main>
+<!-- main -->
+
+<!-- back_to_top -->
+
+<!-- footer -->
+<footer>
+  <!-- footer_inner -->
+  <span>This blog is powered by my own project <a href="https://github.com/AoiKuiyuyou/AoikSeldomStaticSite">AoikSeldomStaticSite</a>.</span>
+  <!-- footer_inner -->
+</footer>
+<!-- footer -->
+
+<!-- bottom_scripts -->
+
+<script type="text/javascript" src="/blog/libs_outer/jquery/3.3.1/jquery.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/vue/2.5.16/vue.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/toastr/2.1.3/toastr.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/highlight/9.12.0/highlight.min.js"></script>
+<script type="text/javascript" src="/blog/libs_inner/base/post.js"></script>
+<!-- bottom_scripts -->
+
+</div>
+<!-- vue_app -->
+
+</body>
+</html>

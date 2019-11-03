@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- head -->
+<head>
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-117972998-1"></script>
+  <script>
+    var hostname = window.location.hostname;
+    if (hostname && hostname !== '127.0.0.1' && hostname !== 'localhost' && hostname !== 'aoik.me.local') {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-117972998-1');
+    }
+  </script>
+  <!-- Google Analytics -->
+
+  <!-- head_meta -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <!-- head_meta -->
+
+  <!-- head_title -->
+  <title>Flask log request response</title>
+  <!-- head_title -->
+
+  <!-- head_links -->
+  <link rel="stylesheet" href="/blog/libs_outer/bootstrap/4.0.0/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/blog/libs_outer/github-markdown-css/2.10.0/github-markdown.css">
+  <link rel="stylesheet" href="/blog/libs_inner/base/base.css">
+  <!-- head_links -->
+
+  <!-- head_links2 -->
+
+<link rel="stylesheet" href="/blog/libs_outer/toastr/2.1.3/toastr.min.css">
+<link rel="stylesheet" href="/blog/libs_outer/highlight/9.12.0/highlight.min.css">
+  <!-- head_links2 -->
+
+  <!-- head_styles -->
+  <!-- head_styles -->
+</head>
+<!-- head -->
+
+<body>
+<div id="vue_app">
+
+<!-- header -->
+<header>
+  <!-- header_inner -->
+  <!-- logo -->
+  <a class="logo_block" href="/blog"><span class="logo_text">Aoik</span></a>
+  <!-- nav -->
+  <nav class="nav_block">
+    <div class="nav_table">
+      <a class="current" href="/blog/posts"><span>Posts</span></a>
+      <a class="" href="/blog/reposts"><span>Reposts</span></a>
+      <a class="" href="/blog/tags"><span>Tags</span></a>
+      <a target="_blank" href="https://github.com/AoiKuiyuyou/Aoik/blob/master/README.md"><span>Github</span></a>
+      <a target="_blank" href="http://aoikuiyuyou.github.io/me.html"><span>Resume</span></a>
+    </div>
+  </nav>
+  <!-- header_inner -->
+</header>
+<!-- header -->
+
+<!-- main -->
+<main>
+  <!-- main_inner -->
+  
+  <!-- breadcrumbs -->
+  <div class="breadcrumbs_block">
+    <a href="/blog">Home</a>
+    <span class="sep">&gt;</span>
+    <a href="/blog/posts">Posts</a>
+    <span class="sep">&gt;</span>
+    <a href="">This</a>
+  </div>
+  <!-- breadcrumbs -->
+
+
+
+  <!-- post_info -->
+  <div class="post_info_block">
+    <div class="tags_block">
+    <a class="tag" href="/blog/tags/python">python</a>
+    <a class="tag" href="/blog/tags/flask">flask</a>
+    </div>
+    <div class="fields_block">
+      <span class="author">Aoik,</span>
+      <span class="create_time">2019.04.09</span>
+    </div>
+  </div>
+  <!-- post_info -->
+
+  <!-- post_content -->
+  <!-- `v-pre` aims to skip Vue parsing -->
+  <article v-pre class="post_content_block markdown-body">
+  <h1 id="flask-log-request-response">Flask log request response</h1><p>Tested with Python 2.7, 3.7.</p>
+<p><br>Create <strong>FlaskLogRequestResponseDemo.py</strong>:</p>
+<pre><code># coding: utf-8
+from __future__ import absolute_import
+
+from datetime import datetime
+from flask import Flask
+from flask import jsonify
+from flask import request
+import json
+import logging
+try:
+    from io import BytesIO
+except ImportError:
+    from StringIO import StringIO as BytesIO
+
+
+LOGGER = logging.getLogger(__name__)
+
+
+FLASK_APP = Flask(__name__)
+
+
+class SaveBodyWsgiApp(object):
+
+    def __init__(self, app):
+        self.app = app
+
+    def __call__(self, environ, start_response):
+        content_length = environ.get(&#39;CONTENT_LENGTH&#39;, &#39;0&#39;)
+
+        content_length = 0 if not content_length else int(content_length)
+
+        body = environ[&#39;wsgi.input&#39;].read(content_length)
+
+        environ[&#39;raw_body&#39;] = body
+
+        environ[&#39;wsgi.input&#39;] = BytesIO(body)
+
+        resp = self.app(
+            environ,
+            start_response,
+        )
+
+        return resp
+
+
+@FLASK_APP.before_request
+def before_request():
+    if not FLASK_APP.debug:
+        return
+
+    lines = []
+
+    time_now = datetime.now()
+
+    lines.append(&#39;Time: &#39; + time_now.strftime(&#39;%Y-%m-%d %H:%M:%S&#39;))
+
+    lines.append(&#39;Remote IP: &#39; + request.remote_addr)
+
+    lines.append(&#39;Protocol: &#39; + str(request.scheme))
+
+    lines.append(&#39;Method: &#39; + request.method)
+
+    lines.append(&#39;Host: &#39; + request.host)
+
+    lines.append(&#39;URL: &#39; + request.url)
+
+    lines.append(&#39;Path: &#39; + request.path)
+
+    lines.append(&#39;Query: &#39; + repr(request.query_string))
+
+    header_texts = [
+        &#39;{0}: {1}&#39;.format(repr(x[0]), repr(x[1]))\
+        for x in request.headers
+    ]
+
+    lines.append(&#39;Headers:\n```\n{0}\n```&#39;.format(&#39;\n&#39;.join(header_texts)))
+
+    lines.append(&#39;Query arguments:&#39;)
+
+    query_arguments = dict(request.args)
+
+    lines.append(
+        json.dumps(
+            query_arguments, ensure_ascii=False, indent=4, sort_keys=True,
+        )
+    )
+
+    lines.append(&#39;Body arguments:&#39;)
+
+    body_arguments = dict(request.form)
+
+    lines.append(
+        json.dumps(
+            body_arguments, ensure_ascii=False, indent=4, sort_keys=True,
+        )
+    )
+
+    body_data = request.environ.get(&#39;raw_body&#39;)
+
+    if body_data is None:
+        body_data = request.get_data()
+
+    lines.append(&#39;Body: {0}&#39;.format(repr(body_data)))
+
+    if body_data:
+        content_type = request.headers.get(&#39;Content-Type&#39;)
+
+        if content_type == &#39;application/json&#39;:
+            try:
+                body_dict = json.loads(request.data.decode(&#39;utf-8&#39;))
+
+                body_text = json.dumps(
+                    body_dict, ensure_ascii=False, indent=4, sort_keys=True,
+                )
+
+                lines.append(&#39;Body dict:\n{0}&#39;.format(body_text))
+            except Exception:
+                pass
+
+    message = &#39;\n# ----- Request -----\n{0}\n&#39;.format(
+        &#39;\n&#39;.join(lines),
+    )
+
+    LOGGER.debug(message)
+
+
+@FLASK_APP.after_request
+def after_request(response):
+    if not FLASK_APP.debug:
+        return response
+
+    lines = []
+
+    time_now = datetime.now()
+
+    lines.append(&#39;Time: &#39; + time_now.strftime(&#39;%Y-%m-%d %H:%M:%S&#39;))
+
+    lines.append(&#39;Status: {0}&#39;.format(response.status))
+
+    header_texts = [
+        &#39;{0}: {1}&#39;.format(repr(x[0]), repr(x[1]))\
+        for x in response.headers
+    ]
+
+    lines.append(&#39;Headers:\n```\n{0}\n```&#39;.format(&#39;\n&#39;.join(header_texts)))
+
+    try:
+        body = response.get_data()
+    except Exception:
+        body = None
+
+    lines.append(&#39;Body: {0}&#39;.format(repr(body)))
+
+    content_type = response.headers.get(&#39;Content-Type&#39;)
+
+    if content_type == &#39;application/json&#39;:
+        try:
+            body_dict = json.loads(body)
+
+            body_text = json.dumps(
+                body_dict, ensure_ascii=False, indent=4, sort_keys=True,
+            )
+
+            lines.append(&#39;Body dict:\n{0}&#39;.format(body_text))
+        except Exception:
+            pass
+
+    message = &#39;\n# ----- Response -----\n{0}\n&#39;.format(
+        &#39;\n&#39;.join(lines),
+    )
+
+    LOGGER.debug(message)
+
+    return response
+
+
+@FLASK_APP.route(&#39;/api/test&#39;, methods=[&#39;GET&#39;, &#39;POST&#39;])
+def api_test():
+    return jsonify({
+        &#39;status&#39;: 200,
+        &#39;code&#39;: &#39;SUCCESS&#39;,
+    })
+
+
+def main(args=None):
+    try:
+        log_formatter = logging.Formatter(
+            &#39;# %(asctime)s %(filename)s:L%(lineno)d %(levelname)s %(message)s&#39;
+        )
+
+        log_handler = logging.StreamHandler()
+
+        log_handler.setLevel(logging.DEBUG)
+
+        log_handler.setFormatter(log_formatter)
+
+        root_logger = logging.getLogger()
+
+        root_logger.setLevel(logging.DEBUG)
+
+        root_logger.addHandler(log_handler)
+
+        debug = True
+
+        if debug:
+            FLASK_APP.wsgi_app = SaveBodyWsgiApp(FLASK_APP.wsgi_app)
+
+        FLASK_APP.run(
+            host=&#39;127.0.0.1&#39;,
+            port=8000,
+            debug=debug,
+        )
+    except KeyboardInterrupt:
+        pass
+
+
+if __name__ == &#39;__main__&#39;:
+    exit(main())</code></pre><p><br>Run <strong>FlaskLogRequestResponseDemo.py</strong>:</p>
+<pre><code>python FlaskLogRequestResponseDemo.py</code></pre><p><br>Send a request:</p>
+<pre><code>curl -v -X POST -H &#39;Content-Type: application/json&#39; -d &#39;{&quot;x&quot;: 1,  &quot;y&quot;: 2}&#39; \
+    &#39;http://127.0.0.1:8000/api/test?a=1&amp;b=2&#39;</code></pre><p><br>Log result:</p>
+<pre><code># 2019-04-09 21:13:12,973 FlaskLogRequestResponseDemo.py:L124 DEBUG
+# ----- Request -----
+Time: 2019-04-09 21:13:12
+Remote IP: 127.0.0.1
+Protocol: http
+Method: POST
+Host: 127.0.0.1:8000
+URL: http://127.0.0.1:8000/api/test?a=1&amp;b=2
+Path: /api/test
+Query: b&#39;a=1&amp;b=2&#39;
+Headers:
+```
+&#39;Host&#39;: &#39;127.0.0.1:8000&#39;
+&#39;User-Agent&#39;: &#39;curl/7.29.0&#39;
+&#39;Accept&#39;: &#39;*/*&#39;
+&#39;Content-Type&#39;: &#39;application/json&#39;
+&#39;Content-Length&#39;: &#39;16&#39;
+```
+Query arguments:
+{
+    &quot;a&quot;: [
+        &quot;1&quot;
+    ],
+    &quot;b&quot;: [
+        &quot;2&quot;
+    ]
+}
+Body arguments:
+{}
+Body: b&#39;{&quot;x&quot;: 1, &quot;y&quot;: 2}&#39;
+Body dict:
+{
+    &quot;x&quot;: 1,
+    &quot;y&quot;: 2
+}
+
+# 2019-04-09 21:13:12,977 FlaskLogRequestResponseDemo.py:L172 DEBUG
+# ----- Response -----
+Time: 2019-04-09 21:13:12
+Status: 200 OK
+Headers:
+```
+&#39;Content-Type&#39;: &#39;application/json&#39;
+&#39;Content-Length&#39;: &#39;42&#39;
+```
+Body: b&#39;{\n  &quot;code&quot;: &quot;SUCCESS&quot;, \n  &quot;status&quot;: 200\n}\n&#39;
+Body dict:
+{
+    &quot;code&quot;: &quot;SUCCESS&quot;,
+    &quot;status&quot;: 200
+}</code></pre>
+  </article>
+  <!-- post_content -->
+
+  <div class="prev_next_posts_block">
+    <div>
+      <span class="prev_post_prompt">Previous Post: </span><a class="prev_post_link" href="/blog/posts/aoikimportutil-a-python-import-utility-library">AoikImportUtil a Python import utility library</a><span class="prev_post_date">(2019.04.08)</span>
+    </div>
+    <div>
+      <span class="next_post_prompt">Next Post: </span><a class="next_post_link" href="/blog/posts/python-compiler-from-grammar-to-dfa">Python's compiler - from grammar to dfa</a><span class="next_post_date">(2019.05.06)</span>
+    </div>
+  </div>
+
+  <!-- Special syntax below is for Vue rendering on the client side -->
+  <div v-cloak id="post_comments_block" class="post_comments_block">
+    <p class="title">Comments:</p>
+    <div class="write_comment_block">
+      <div class="comment_info_block">
+        <input v-model="commenter_name" class="commenter_name" placeholder="Your name"></input>
+        <div class="replyto_block">
+          <span>Reply to:</span>
+          <select v-model="replyto_comment_id">
+             <!-- `0` is a special value meaning no replyto -->
+             <option disabled value="0"></option>
+             <option v-for="comment_id in comment_ids" :value="comment_id">{{comment_id}}</option>
+          </select>
+        </div>
+      </div>
+      <textarea v-model="comment_content" class="comment_content" placeholder="Comment"></textarea>
+      <div><input v-on:click="comment_submit_button_on_click" class="submit_button" type="button" value="Submit"></input></div>
+    </div>
+    <ul>
+        <li v-for="comment_info in comment_infos" v-bind:class="comment_info.is_admin ? 'is_admin' : ''">
+            <a v-bind:id="'comment-' + comment_info.comment_id"
+              v-bind:href="'#comment-' + comment_info.comment_id" class="comment_id">{{comment_info.comment_id}}</a>
+            <div class="comment_content">{{comment_info.comment_content}}</div>
+            <div class="comment_info">
+              <span class="commenter_name">{{comment_info.commenter_name}}</span>
+              <span class="create_time">{{comment_info.create_time}}</span>
+              <template v-if="comment_info.replyto_comment_id > 0">
+              <span>to <a v-bind:href="'#comment-' + comment_info.replyto_comment_id">comment-{{comment_info.replyto_comment_id}}</a></span>
+              </template>
+              <a v-bind:data-comment-id="comment_info.comment_id" v-on:click="comment_reply_button_on_click" class="reply_button" href="#post_comments_block">Reply to this</a>
+            </div>
+        </li>
+    </ul>
+  </div>
+  
+
+  <!-- post_toc -->
+  <div id="post_toc_block" class="post_toc_block is_hidden">
+    <a v-on:click="post_toc_hide_link_on_click" data-shown-text="Hide" data-hidden-text="TOC" class="hide_link" href="javascript:void(0)">TOC</a>
+    <span class="title">Contents</span>
+  </div>
+  <!-- post_toc -->
+
+  <!-- back_to_top -->
+  <div id="back_to_top_block" class="back_to_top_block is_hidden">
+    <a v-on:click="back_to_top_button_on_click">
+      <div class="arrow_shape">
+        <div class="arrow_head"></div>
+        <div class="arrow_body"></div>
+      </div>
+    </a>
+  </div>
+  <!-- back_to_top -->
+
+  <div id="post_id" style="display: none;">29</div>
+  <!-- main_inner -->
+</main>
+<!-- main -->
+
+<!-- back_to_top -->
+
+<!-- footer -->
+<footer>
+  <!-- footer_inner -->
+  <span>This blog is powered by my own project <a href="https://github.com/AoiKuiyuyou/AoikSeldomStaticSite">AoikSeldomStaticSite</a>.</span>
+  <!-- footer_inner -->
+</footer>
+<!-- footer -->
+
+<!-- bottom_scripts -->
+
+<script type="text/javascript" src="/blog/libs_outer/jquery/3.3.1/jquery.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/vue/2.5.16/vue.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/toastr/2.1.3/toastr.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/highlight/9.12.0/highlight.min.js"></script>
+<script type="text/javascript" src="/blog/libs_inner/base/post.js"></script>
+<!-- bottom_scripts -->
+
+</div>
+<!-- vue_app -->
+
+</body>
+</html>

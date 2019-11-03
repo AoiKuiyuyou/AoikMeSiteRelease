@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- head -->
+<head>
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-117972998-1"></script>
+  <script>
+    var hostname = window.location.hostname;
+    if (hostname && hostname !== '127.0.0.1' && hostname !== 'localhost' && hostname !== 'aoik.me.local') {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-117972998-1');
+    }
+  </script>
+  <!-- Google Analytics -->
+
+  <!-- head_meta -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <!-- head_meta -->
+
+  <!-- head_title -->
+  <title>Python convert int to binary efficiently</title>
+  <!-- head_title -->
+
+  <!-- head_links -->
+  <link rel="stylesheet" href="/blog/libs_outer/bootstrap/4.0.0/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/blog/libs_outer/github-markdown-css/2.10.0/github-markdown.css">
+  <link rel="stylesheet" href="/blog/libs_inner/base/base.css">
+  <!-- head_links -->
+
+  <!-- head_links2 -->
+
+<link rel="stylesheet" href="/blog/libs_outer/toastr/2.1.3/toastr.min.css">
+<link rel="stylesheet" href="/blog/libs_outer/highlight/9.12.0/highlight.min.css">
+  <!-- head_links2 -->
+
+  <!-- head_styles -->
+  <!-- head_styles -->
+</head>
+<!-- head -->
+
+<body>
+<div id="vue_app">
+
+<!-- header -->
+<header>
+  <!-- header_inner -->
+  <!-- logo -->
+  <a class="logo_block" href="/blog"><span class="logo_text">Aoik</span></a>
+  <!-- nav -->
+  <nav class="nav_block">
+    <div class="nav_table">
+      <a class="current" href="/blog/posts"><span>Posts</span></a>
+      <a class="" href="/blog/reposts"><span>Reposts</span></a>
+      <a class="" href="/blog/tags"><span>Tags</span></a>
+      <a target="_blank" href="https://github.com/AoiKuiyuyou/Aoik/blob/master/README.md"><span>Github</span></a>
+      <a target="_blank" href="http://aoikuiyuyou.github.io/me.html"><span>Resume</span></a>
+    </div>
+  </nav>
+  <!-- header_inner -->
+</header>
+<!-- header -->
+
+<!-- main -->
+<main>
+  <!-- main_inner -->
+  
+  <!-- breadcrumbs -->
+  <div class="breadcrumbs_block">
+    <a href="/blog">Home</a>
+    <span class="sep">&gt;</span>
+    <a href="/blog/posts">Posts</a>
+    <span class="sep">&gt;</span>
+    <a href="">This</a>
+  </div>
+  <!-- breadcrumbs -->
+
+
+
+  <!-- post_info -->
+  <div class="post_info_block">
+    <div class="tags_block">
+    <a class="tag" href="/blog/tags/python">python</a>
+    <a class="tag" href="/blog/tags/algorithm">algorithm</a>
+    <a class="tag" href="/blog/tags/source-code-study">source-code-study</a>
+    <a class="tag" href="/blog/tags/吸星大法强吃源码">吸星大法强吃源码</a>
+    </div>
+    <div class="fields_block">
+      <span class="author">Aoik,</span>
+      <span class="create_time">2019.03.25</span>
+    </div>
+  </div>
+  <!-- post_info -->
+
+  <!-- post_content -->
+  <!-- `v-pre` aims to skip Vue parsing -->
+  <article v-pre class="post_content_block markdown-body">
+  <h1 id="python-convert-int-to-binary-efficiently">Python convert int to binary efficiently</h1><p>Below are several ways to convert an int to binary string.</p>
+<pre><code># coding: utf-8
+
+def f1(num):
+    if not num:
+        return &#39;0&#39;
+    bin_str = &#39;&#39;
+    while num:
+        bin_str = (&#39;1&#39; if (num &amp; 1) else &#39;0&#39;) + bin_str
+        num &gt;&gt;= 1
+    return bin_str
+
+NUM_TO_BIN_0XFF = dict((i, bin(i)[2:]) for i in range(0xFF + 1))
+
+def f2(num):
+    if not num:
+        return &#39;0&#39;
+    bin_str = &#39;&#39;
+    while num:
+        bin_str = NUM_TO_BIN_0XFF[num &amp; 0xFF] + bin_str
+        num &gt;&gt;= 8
+    return bin_str
+
+
+NUM_TO_BIN_0XFFFF = dict((i, bin(i)[2:]) for i in range(0xFFFF + 1))
+
+def f3(num):
+    if not num:
+        return &#39;0&#39;
+    bin_str = &#39;&#39;
+    while num:
+        bin_str = NUM_TO_BIN_0XFFFF[num &amp; 0xFFFF] + bin_str
+        num &gt;&gt;= 16
+    return bin_str
+
+
+NUMS = list(range(0xFFFF + 1))
+
+
+if __name__ == &#39;__main__&#39;:
+    from timeit import Timer
+
+    number = 10
+
+    timer = Timer(&#39;for i in NUMS: bin(i)&#39;, &#39;from __main__ import f1, NUMS&#39;)
+    print(int(timer.timeit(number=number) / number / len(NUMS) * 1e9))
+
+    timer = Timer(&#39;for i in NUMS: bin(i)[2:]&#39;, &#39;from __main__ import f1, NUMS&#39;)
+    print(int(timer.timeit(number=number) / number / len(NUMS) * 1e9))
+
+    timer = Timer(&#39;for i in NUMS: \&#39;{0:b}\&#39;.format(i)&#39;, &#39;from __main__ import f1, NUMS&#39;)
+    print(int(timer.timeit(number=number) / number / len(NUMS) * 1e9))
+
+    timer = Timer(&#39;for i in NUMS: f1(i)&#39;, &#39;from __main__ import f1, NUMS&#39;)
+    print(int(timer.timeit(number=number) / number / len(NUMS) * 1e9))
+
+    timer = Timer(&#39;for i in NUMS: f2(i)&#39;, &#39;from __main__ import f2, NUMS&#39;)
+    print(int(timer.timeit(number=number) / number / len(NUMS) * 1e9))
+
+    timer = Timer(&#39;for i in NUMS: f3(i)&#39;, &#39;from __main__ import f3, NUMS&#39;)
+    print(int(timer.timeit(number=number) / number / len(NUMS) * 1e9))</code></pre><p><code>f1</code> checks the rightmost bit of the number and then right-shifts the number by one bit.</p>
+<p><code>f2</code> uses a pre-computed dict to map the rightmost byte of the number to binary string and then right-shifts the number by 8 bits.</p>
+<p><code>f3</code> uses a pre-computed dict to map the rightmost two bytes of the number to binary string and then right-shifts the number by 16 bits.</p>
+<p>The benchmarking result on my computer is:</p>
+<ul>
+<li><code>bin(i)[2:]</code>: 1.59x of <code>bin(i)</code>.</li>
+<li><code>&#39;{0:b}&#39;.format(i)</code>: 2.36x of <code>bin(i)</code>.</li>
+<li><code>f1(i)</code>: 25.36x of <code>bin(i)</code>.</li>
+<li><code>f2(i)</code>: 4.42x of <code>bin(i)</code>.</li>
+<li><code>f3(i)</code>: 2.86x of <code>bin(i)</code>.</li>
+</ul>
+<p>We can see <code>bin</code> is the fastest. <code>f1</code> is very slow. The pre-computing approach of <code>f2</code> and <code>f3</code> makes their performance not an order of magnitude slower than the built-in <code>bin</code> function.</p>
+<p>Now let&#39;s take a look of the source code of the built-in <code>bin</code> function to see why it is fast.</p>
+<p><a href="https://github.com/python/cpython/blob/v3.7.0/Python/bltinmodule.c#L483">Here</a> is the definition of <code>bin</code>. It in turn calls <a href="https://github.com/python/cpython/blob/v3.7.0/Objects/abstract.c#L1478">PyNumber_ToBase</a>, which in turn calls <a href="https://github.com/python/cpython/blob/v3.7.0/Objects/longobject.c#L1939">_PyLong_Format</a>, which in turn calls <a href="https://github.com/python/cpython/blob/v3.7.0/Objects/longobject.c#L1777">long_format_binary</a>.</p>
+<p>As shown <a href="https://github.com/python/cpython/blob/v3.7.0/Include/longintrepr.h#L87">here</a>, an int object is internally represented as an array of <code>digit</code> (i.e. <code>uint32_t</code>). Each <code>digit</code> stores 30 bits of the int. This explains the way the number of bits of an int is computed in <code>long_format_binary</code> at <a href="https://github.com/python/cpython/blob/v3.7.0/Objects/longobject.c#L1824">here</a>. Notice the last <code>digit</code>&#39;s number of bits is computed using <code>bits_in_digit</code>, to exclude leading zeros.</p>
+<p>At <a href="https://github.com/python/cpython/blob/v3.7.0/Objects/longobject.c#L1845">here</a>, a unicode object is created.</p>
+<p>At <a href="https://github.com/python/cpython/blob/v3.7.0/Objects/longobject.c#L1920">here</a>, macro <a href="https://github.com/python/cpython/blob/v3.7.0/Objects/longobject.c#L1889">WRITE_UNICODE_DIGITS</a> is called to write the unicode object&#39;s internal data. At <a href="https://github.com/python/cpython/blob/v3.7.0/Objects/longobject.c#L1894">here</a>, a pointer to the internal data is obtained. Notice the <code>+ sz</code> part, it means to write the internal data from end to start.</p>
+<p>At <a href="https://github.com/python/cpython/blob/v3.7.0/Objects/longobject.c#L1896">here</a>, macro <a href="https://github.com/python/cpython/blob/v3.7.0/Objects/longobject.c#L1851">WRITE_DIGITS</a> is called.</p>
+<p>At <a href="https://github.com/python/cpython/blob/v3.7.0/Objects/longobject.c#L1862">here</a>, each <code>digit</code>&#39;s bits are put in <code>accum</code>. The <code>&lt;&lt; accumbits</code> part puts the bits in higher location in case there are some leftover bits from the previous <code>digit</code>. Leftover bits may appear because at <a href="https://github.com/python/cpython/blob/v3.7.0/Objects/longobject.c#L1867">here</a> <code>bits</code> bits are handled each time and at <a href="https://github.com/python/cpython/blob/v3.7.0/Objects/longobject.c#L1872">here</a> if there are less than <code>bits</code> in <code>accum</code>, the do-while loop will stop (unless it is handling the last <code>digit</code>), the next <code>digit</code>&#39;s bits will be added to <code>accum</code>. The value of <code>bits</code> is 1 for base 2, 3 for base 8, and 4 for base 16. So for base 2, leftover bits will not appear.</p>
+<p>At <a href="https://github.com/python/cpython/blob/v3.7.0/Objects/longobject.c#L1868">here</a>, the <code>bits</code> bits are mapped to the corresponding digit of the target base.</p>
+<p>At <a href="https://github.com/python/cpython/blob/v3.7.0/Objects/longobject.c#L1869">here</a>, the digit is written to the unicode internal data.</p>
+<p>At <a href="https://github.com/python/cpython/blob/v3.7.0/Objects/longobject.c#L1870">here</a>, the number of bits in <code>accum</code> is reduced.</p>
+<p>At <a href="https://github.com/python/cpython/blob/v3.7.0/Objects/longobject.c#L1871">here</a>, <code>accum</code> is right-shifted to discard the bits already handled.</p>
+<p>That&#39;s how the built-in <code>bin</code> function implements the int-to-binary conversion. In summary, it is fast because:</p>
+<ul>
+<li>1. It is implemented in C.</li>
+<li>2. It can access the internal bits of an int object. The mapping from each group of bits to a digit of the target base is implemented by a simple <code>char</code> offset.</li>
+<li>3. The digits of the target base are directly written to the unicode object&#39;s internal data.</li>
+</ul>
+
+  </article>
+  <!-- post_content -->
+
+  <div class="prev_next_posts_block">
+    <div>
+      <span class="prev_post_prompt">Previous Post: </span><a class="prev_post_link" href="/blog/posts/mysql-find-what-permissions-users-have">MySQL find what permissions users have</a><span class="prev_post_date">(2019.03.24)</span>
+    </div>
+    <div>
+      <span class="next_post_prompt">Next Post: </span><a class="next_post_link" href="/blog/posts/python-3.7.0-execution-flow">Python 3.7.0 execution flow</a><span class="next_post_date">(2019.03.26)</span>
+    </div>
+  </div>
+
+  <!-- Special syntax below is for Vue rendering on the client side -->
+  <div v-cloak id="post_comments_block" class="post_comments_block">
+    <p class="title">Comments:</p>
+    <div class="write_comment_block">
+      <div class="comment_info_block">
+        <input v-model="commenter_name" class="commenter_name" placeholder="Your name"></input>
+        <div class="replyto_block">
+          <span>Reply to:</span>
+          <select v-model="replyto_comment_id">
+             <!-- `0` is a special value meaning no replyto -->
+             <option disabled value="0"></option>
+             <option v-for="comment_id in comment_ids" :value="comment_id">{{comment_id}}</option>
+          </select>
+        </div>
+      </div>
+      <textarea v-model="comment_content" class="comment_content" placeholder="Comment"></textarea>
+      <div><input v-on:click="comment_submit_button_on_click" class="submit_button" type="button" value="Submit"></input></div>
+    </div>
+    <ul>
+        <li v-for="comment_info in comment_infos" v-bind:class="comment_info.is_admin ? 'is_admin' : ''">
+            <a v-bind:id="'comment-' + comment_info.comment_id"
+              v-bind:href="'#comment-' + comment_info.comment_id" class="comment_id">{{comment_info.comment_id}}</a>
+            <div class="comment_content">{{comment_info.comment_content}}</div>
+            <div class="comment_info">
+              <span class="commenter_name">{{comment_info.commenter_name}}</span>
+              <span class="create_time">{{comment_info.create_time}}</span>
+              <template v-if="comment_info.replyto_comment_id > 0">
+              <span>to <a v-bind:href="'#comment-' + comment_info.replyto_comment_id">comment-{{comment_info.replyto_comment_id}}</a></span>
+              </template>
+              <a v-bind:data-comment-id="comment_info.comment_id" v-on:click="comment_reply_button_on_click" class="reply_button" href="#post_comments_block">Reply to this</a>
+            </div>
+        </li>
+    </ul>
+  </div>
+  
+
+  <!-- post_toc -->
+  <div id="post_toc_block" class="post_toc_block is_hidden">
+    <a v-on:click="post_toc_hide_link_on_click" data-shown-text="Hide" data-hidden-text="TOC" class="hide_link" href="javascript:void(0)">TOC</a>
+    <span class="title">Contents</span>
+  </div>
+  <!-- post_toc -->
+
+  <!-- back_to_top -->
+  <div id="back_to_top_block" class="back_to_top_block is_hidden">
+    <a v-on:click="back_to_top_button_on_click">
+      <div class="arrow_shape">
+        <div class="arrow_head"></div>
+        <div class="arrow_body"></div>
+      </div>
+    </a>
+  </div>
+  <!-- back_to_top -->
+
+  <div id="post_id" style="display: none;">17</div>
+  <!-- main_inner -->
+</main>
+<!-- main -->
+
+<!-- back_to_top -->
+
+<!-- footer -->
+<footer>
+  <!-- footer_inner -->
+  <span>This blog is powered by my own project <a href="https://github.com/AoiKuiyuyou/AoikSeldomStaticSite">AoikSeldomStaticSite</a>.</span>
+  <!-- footer_inner -->
+</footer>
+<!-- footer -->
+
+<!-- bottom_scripts -->
+
+<script type="text/javascript" src="/blog/libs_outer/jquery/3.3.1/jquery.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/vue/2.5.16/vue.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/toastr/2.1.3/toastr.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/highlight/9.12.0/highlight.min.js"></script>
+<script type="text/javascript" src="/blog/libs_inner/base/post.js"></script>
+<!-- bottom_scripts -->
+
+</div>
+<!-- vue_app -->
+
+</body>
+</html>

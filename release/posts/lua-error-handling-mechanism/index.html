@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- head -->
+<head>
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-117972998-1"></script>
+  <script>
+    var hostname = window.location.hostname;
+    if (hostname && hostname !== '127.0.0.1' && hostname !== 'localhost' && hostname !== 'aoik.me.local') {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-117972998-1');
+    }
+  </script>
+  <!-- Google Analytics -->
+
+  <!-- head_meta -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <!-- head_meta -->
+
+  <!-- head_title -->
+  <title>Lua error handling mechanism</title>
+  <!-- head_title -->
+
+  <!-- head_links -->
+  <link rel="stylesheet" href="/blog/libs_outer/bootstrap/4.0.0/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/blog/libs_outer/github-markdown-css/2.10.0/github-markdown.css">
+  <link rel="stylesheet" href="/blog/libs_inner/base/base.css">
+  <!-- head_links -->
+
+  <!-- head_links2 -->
+
+<link rel="stylesheet" href="/blog/libs_outer/toastr/2.1.3/toastr.min.css">
+<link rel="stylesheet" href="/blog/libs_outer/highlight/9.12.0/highlight.min.css">
+  <!-- head_links2 -->
+
+  <!-- head_styles -->
+  <!-- head_styles -->
+</head>
+<!-- head -->
+
+<body>
+<div id="vue_app">
+
+<!-- header -->
+<header>
+  <!-- header_inner -->
+  <!-- logo -->
+  <a class="logo_block" href="/blog"><span class="logo_text">Aoik</span></a>
+  <!-- nav -->
+  <nav class="nav_block">
+    <div class="nav_table">
+      <a class="current" href="/blog/posts"><span>Posts</span></a>
+      <a class="" href="/blog/reposts"><span>Reposts</span></a>
+      <a class="" href="/blog/tags"><span>Tags</span></a>
+      <a target="_blank" href="https://github.com/AoiKuiyuyou/Aoik/blob/master/README.md"><span>Github</span></a>
+      <a target="_blank" href="http://aoikuiyuyou.github.io/me.html"><span>Resume</span></a>
+    </div>
+  </nav>
+  <!-- header_inner -->
+</header>
+<!-- header -->
+
+<!-- main -->
+<main>
+  <!-- main_inner -->
+  
+  <!-- breadcrumbs -->
+  <div class="breadcrumbs_block">
+    <a href="/blog">Home</a>
+    <span class="sep">&gt;</span>
+    <a href="/blog/posts">Posts</a>
+    <span class="sep">&gt;</span>
+    <a href="">This</a>
+  </div>
+  <!-- breadcrumbs -->
+
+
+
+  <!-- post_info -->
+  <div class="post_info_block">
+    <div class="tags_block">
+    <a class="tag" href="/blog/tags/lua">lua</a>
+    <a class="tag" href="/blog/tags/source-code-study">source-code-study</a>
+    <a class="tag" href="/blog/tags/吸星大法强吃源码">吸星大法强吃源码</a>
+    </div>
+    <div class="fields_block">
+      <span class="author">Aoik,</span>
+      <span class="create_time">2019.03.30</span>
+    </div>
+  </div>
+  <!-- post_info -->
+
+  <!-- post_content -->
+  <!-- `v-pre` aims to skip Vue parsing -->
+  <article v-pre class="post_content_block markdown-body">
+  <h1 id="lua-error-handling-mechanism">Lua error handling mechanism</h1><p>Lua version 5.3.5.</p>
+<p>Lua&#39;s execution flow has been introduced in
+<a href="https://aoik.me/blog/posts/lua-execution-flow">this post</a>.</p>
+<p>In Lua, invalid operations like performing arithmetic operation on <code>nil</code> will cause an error. Arbitrary errors can be raised in user code by calling function
+<code>error</code>.</p>
+<p>The Lua language does not provide syntax for catching errors. To catch errors
+without aborting the execution, user code should use <code>pcall</code> or <code>xpcall</code> to
+call a target function that may cause errors:</p>
+<pre><code>pcall(target_func)
+
+xpcall(target_func, error_handler)</code></pre><p>Internally, <code>pcall</code> in user code corresponds to  <code>lbaselib.c--luaB_pcall</code>. In
+<code>lbaselib.c--luaB_pcall</code>, a chain of calls happens: <code>lapi.c--lua_pcallk</code> -&gt; <code>ldo.c--luaD_pcall</code> -&gt; <code>ldo.c--luaD_rawrunprotected</code>:</p>
+<pre><code>int luaD_rawrunprotected (lua_State *L, Pfunc f, void *ud) {
+  // Save old number of nexted C calls
+  unsigned short oldnCcalls = L-&gt;nCcalls;
+
+  // Create new error jump info
+  struct lua_longjmp lj;
+
+  // Set initial status
+  lj.status = LUA_OK;
+
+  // Save old error jump info
+  lj.previous = L-&gt;errorJmp;  /* chain new error handler */
+
+  // Set new error jump info
+  L-&gt;errorJmp = &amp;lj;
+
+  // `LUAI_TRY` calls `setjmp` to save current execution context to
+  // `L-&gt;errorJmp-&gt;b`, so that in case of an error, execution can jump back by
+  // restoring context in `L-&gt;errorJmp-&gt;b`. `LUAI_TRY` calls `(*f)(L, ud)`.
+  LUAI_TRY(L, &amp;lj,
+    (*f)(L, ud);
+  );
+
+  // Restore old error jump info
+  L-&gt;errorJmp = lj.previous;  /* restore old error handler */
+
+  // Restore old number of nexted C calls
+  L-&gt;nCcalls = oldnCcalls;
+
+  // Return call status
+  return lj.status;
+}</code></pre><p>In <code>ldo.c--luaD_rawrunprotected</code>, it replaces <code>L-&gt;errorJmp</code> with a new
+<code>lua_longjmp</code> struct (the old one can still be found via <code>L-&gt;errorJmp.previous</code>
+):</p>
+<pre><code>#define luai_jmpbuf   jmp_buf
+
+struct lua_longjmp {
+  struct lua_longjmp *previous;
+  luai_jmpbuf b;
+  volatile int status;  /* error code */
+};</code></pre><p>Then <code>ldo.c--LUAI_TRY</code> is called with the new <code>lua_longjmp</code> struct.</p>
+<pre><code>#define LUAI_TRY(L,c,a)   if (setjmp((c)-&gt;b) == 0) { a }</code></pre><p><code>c</code> is a pointer to the new <code>lua_longjmp</code> struct. <code>a</code> is the statement that
+calls the target function corresponding to the argument to <code>pcall</code> in user
+code.</p>
+<p><code>setjmp</code> stores the current execution context in <code>(c)-&gt;b</code> (i.e.
+<code>L-&gt;errorJmp.b</code>), then returns 0. If it returns 0, the statement <code>a</code> that calls the target function will run. The case it returns non-zero will be talked about later.</p>
+<p>The target function runs until an error occurs.</p>
+<p>Internally, when an error occurs, <code>ldebug.c--luaG_runerror</code> is called:</p>
+<pre><code>l_noret luaG_runerror (lua_State *L, const char *fmt, ...) {
+  CallInfo *ci = L-&gt;ci;
+  const char *msg;
+  va_list argp;
+  luaC_checkGC(L);  /* error message uses memory */
+  va_start(argp, fmt);
+  msg = luaO_pushvfstring(L, fmt, argp);  /* format message */
+  va_end(argp);
+  if (isLua(ci))  /* if Lua function, add source:line information */
+    luaG_addinfo(L, msg, ci_func(ci)-&gt;p-&gt;source, currentline(ci));
+  luaG_errormsg(L);
+}</code></pre><p><code>ldebug.c--luaG_runerror</code> pushes an error message to stack, then calls
+<code>ldebug.c--luaG_errormsg</code>. (The <code>error</code> function in user code corresponds to
+<code>lbaselib.c--luaB_error</code>, which calls <code>lapi.c--lua_error</code>, which calls
+<code>ldebug.c--luaG_errormsg</code> too.)</p>
+<pre><code>l_noret luaG_errormsg (lua_State *L) {
+  if (L-&gt;errfunc != 0) {  /* is there an error handling function? */
+    // Get error function&#39;s TValue pointer.
+    StkId errfunc = restorestack(L, L-&gt;errfunc);
+
+    // Put error message in `L-&gt;top`.
+    setobjs2s(L, L-&gt;top, L-&gt;top - 1);  /* move argument */
+
+    // Put error function&#39;s TValue in `L-&gt;top - 1`.
+    setobjs2s(L, L-&gt;top - 1, errfunc);  /* push function */
+
+    L-&gt;top++;  /* assume EXTRA_STACK */
+
+    // Call the error function
+    luaD_callnoyield(L, L-&gt;top - 2, 1);  /* call it */
+  }
+
+  luaD_throw(L, LUA_ERRRUN);
+}</code></pre><p>In <code>ldebug.c--luaG_errormsg</code>, if an error handler is present in <code>L-&gt;errfunc</code>,
+it is called. Then <code>ldo.c--luaD_throw</code> is called:</p>
+<pre><code>l_noret luaD_throw (lua_State *L, int errcode) {
+  if (L-&gt;errorJmp) {  /* thread has an error handler? */
+    L-&gt;errorJmp-&gt;status = errcode;  /* set status */
+    LUAI_THROW(L, L-&gt;errorJmp);  /* jump to it */
+  }
+  else {  /* thread has no error handler */
+    global_State *g = G(L);
+    L-&gt;status = cast_byte(errcode);  /* mark it as dead */
+    if (g-&gt;mainthread-&gt;errorJmp) {  /* main thread has a handler? */
+      setobjs2s(L, g-&gt;mainthread-&gt;top++, L-&gt;top - 1);  /* copy error obj. */
+      luaD_throw(g-&gt;mainthread, errcode);  /* re-throw in main thread */
+    }
+    else {  /* no handler at all; abort */
+      if (g-&gt;panic) {  /* panic function? */
+        seterrorobj(L, errcode, L-&gt;top);  /* assume EXTRA_STACK */
+        if (L-&gt;ci-&gt;top &lt; L-&gt;top)
+          L-&gt;ci-&gt;top = L-&gt;top;  /* pushing msg. can break this invariant */
+        lua_unlock(L);
+        g-&gt;panic(L);  /* call panic function (last chance to jump out) */
+      }
+      abort();
+    }
+  }
+}</code></pre><p>In <code>ldo.c--luaD_throw</code>, if <code>L-&gt;errorJmp</code> is present (recall <code>L-&gt;errorJmp</code> is
+set with a new <code>lua_longjmp</code> struct in <code>ldo.c--luaD_rawrunprotected</code>), the
+error code will be stored in <code>L-&gt;errorJmp-&gt;status</code>. Then <code>ldo.c--LUAI_THROW</code> is
+called with <code>L-&gt;errorJmp</code>:</p>
+<pre><code>#define LUAI_THROW(L,c)   longjmp((c)-&gt;b, 1)</code></pre><p>In <code>ldo.c--LUAI_THROW</code>, <code>longjmp</code> is called with the execution context stored
+in <code>L-&gt;errorJmp.b</code>. Now the execution flow jumps back to where the
+corresponding <code>setjmp</code> that stored the execution context in <code>L-&gt;errorJmp.b</code>
+was called:</p>
+<pre><code>#define LUAI_TRY(L,c,a)   if (setjmp((c)-&gt;b) == 0) { a }</code></pre><p>Notice the second argument of <code>longjmp</code> is 1, which will become the return
+value of the <code>setjmp</code>. Now that <code>setjmp</code> returns non-zero, the statement <code>a</code>
+will not run.</p>
+<p>In <code>ldo.c--luaD_rawrunprotected</code>, after <code>LUAI_TRY</code> is done, the old
+<code>lua_longjmp</code> struct pointed to by <code>L-&gt;errorJmp.previous</code> is restored as
+<code>L-&gt;errorJmp</code>. The status code stored in <code>L-&gt;errorJmp-&gt;status</code> during the
+target function call is used as the return value (recall the error code is
+stored in it by <code>ldo.c--luaD_throw</code>).</p>
+<p>In <code>lbaselib.c--luaB_pcall</code>, the chain of calls <code>lapi.c--lua_pcallk</code> -&gt;
+<code>ldo.c--luaD_pcall</code> -&gt; <code>ldo.c--luaD_rawrunprotected</code> returns. The status code
+is returned. Then <code>lbaselib.c--finishpcall</code> is called:</p>
+<pre><code>static int finishpcall (lua_State *L, int status, lua_KContext extra) {
+  if (status != LUA_OK &amp;&amp; status != LUA_YIELD) {  /* error? */
+    lua_pushboolean(L, 0);  /* first result (false) */
+    lua_pushvalue(L, -2);  /* error message */
+    return 2;  /* return false, msg */
+  }
+  else
+    return lua_gettop(L) - (int)extra;  /* return all results */
+}</code></pre><p>If the status code indicates an error, the first return value of <code>pcall</code> in
+user code is set to be <code>false</code>, the second return value is set to be the error
+message pushed to stack by <code>ldebug.c--luaG_runerror</code>.</p>
+<p>If the status code indicates no error, the first return value of <code>pcall</code> in
+user code is set to be <code>true</code> (already pushed to stack in
+<code>lbaselib.c--luaB_pcall</code>), followed by return values from the target
+function called.</p>
+<p>In summary, error handling is implemented by storing execution context using
+<code>setjump</code>, and jumping back using <code>longjump</code> in case of an error. Before
+jumping back, an error message is pushed to stack, and the error code is stored
+in <code>L-&gt;errorJmp.status</code>. According to whether the status code indicates an
+error, <code>pcall</code> or <code>xpcall</code> returns either <code>false</code> or <code>true</code> as the first return
+value.</p>
+
+  </article>
+  <!-- post_content -->
+
+  <div class="prev_next_posts_block">
+    <div>
+      <span class="prev_post_prompt">Previous Post: </span><a class="prev_post_link" href="/blog/posts/lua-function-call-mechanism">Lua function call mechanism</a><span class="prev_post_date">(2019.03.28)</span>
+    </div>
+    <div>
+      <span class="next_post_prompt">Next Post: </span><a class="next_post_link" href="/blog/reposts/vlan-illustrated">图文并茂VLAN详解，让你看一遍就理解VLAN</a><span class="next_post_date">(2019.04.01)</span>
+    </div>
+  </div>
+
+  <!-- Special syntax below is for Vue rendering on the client side -->
+  <div v-cloak id="post_comments_block" class="post_comments_block">
+    <p class="title">Comments:</p>
+    <div class="write_comment_block">
+      <div class="comment_info_block">
+        <input v-model="commenter_name" class="commenter_name" placeholder="Your name"></input>
+        <div class="replyto_block">
+          <span>Reply to:</span>
+          <select v-model="replyto_comment_id">
+             <!-- `0` is a special value meaning no replyto -->
+             <option disabled value="0"></option>
+             <option v-for="comment_id in comment_ids" :value="comment_id">{{comment_id}}</option>
+          </select>
+        </div>
+      </div>
+      <textarea v-model="comment_content" class="comment_content" placeholder="Comment"></textarea>
+      <div><input v-on:click="comment_submit_button_on_click" class="submit_button" type="button" value="Submit"></input></div>
+    </div>
+    <ul>
+        <li v-for="comment_info in comment_infos" v-bind:class="comment_info.is_admin ? 'is_admin' : ''">
+            <a v-bind:id="'comment-' + comment_info.comment_id"
+              v-bind:href="'#comment-' + comment_info.comment_id" class="comment_id">{{comment_info.comment_id}}</a>
+            <div class="comment_content">{{comment_info.comment_content}}</div>
+            <div class="comment_info">
+              <span class="commenter_name">{{comment_info.commenter_name}}</span>
+              <span class="create_time">{{comment_info.create_time}}</span>
+              <template v-if="comment_info.replyto_comment_id > 0">
+              <span>to <a v-bind:href="'#comment-' + comment_info.replyto_comment_id">comment-{{comment_info.replyto_comment_id}}</a></span>
+              </template>
+              <a v-bind:data-comment-id="comment_info.comment_id" v-on:click="comment_reply_button_on_click" class="reply_button" href="#post_comments_block">Reply to this</a>
+            </div>
+        </li>
+    </ul>
+  </div>
+  
+
+  <!-- post_toc -->
+  <div id="post_toc_block" class="post_toc_block is_hidden">
+    <a v-on:click="post_toc_hide_link_on_click" data-shown-text="Hide" data-hidden-text="TOC" class="hide_link" href="javascript:void(0)">TOC</a>
+    <span class="title">Contents</span>
+  </div>
+  <!-- post_toc -->
+
+  <!-- back_to_top -->
+  <div id="back_to_top_block" class="back_to_top_block is_hidden">
+    <a v-on:click="back_to_top_button_on_click">
+      <div class="arrow_shape">
+        <div class="arrow_head"></div>
+        <div class="arrow_body"></div>
+      </div>
+    </a>
+  </div>
+  <!-- back_to_top -->
+
+  <div id="post_id" style="display: none;">20</div>
+  <!-- main_inner -->
+</main>
+<!-- main -->
+
+<!-- back_to_top -->
+
+<!-- footer -->
+<footer>
+  <!-- footer_inner -->
+  <span>This blog is powered by my own project <a href="https://github.com/AoiKuiyuyou/AoikSeldomStaticSite">AoikSeldomStaticSite</a>.</span>
+  <!-- footer_inner -->
+</footer>
+<!-- footer -->
+
+<!-- bottom_scripts -->
+
+<script type="text/javascript" src="/blog/libs_outer/jquery/3.3.1/jquery.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/vue/2.5.16/vue.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/toastr/2.1.3/toastr.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/highlight/9.12.0/highlight.min.js"></script>
+<script type="text/javascript" src="/blog/libs_inner/base/post.js"></script>
+<!-- bottom_scripts -->
+
+</div>
+<!-- vue_app -->
+
+</body>
+</html>

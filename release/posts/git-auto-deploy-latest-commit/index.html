@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- head -->
+<head>
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-117972998-1"></script>
+  <script>
+    var hostname = window.location.hostname;
+    if (hostname && hostname !== '127.0.0.1' && hostname !== 'localhost' && hostname !== 'aoik.me.local') {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-117972998-1');
+    }
+  </script>
+  <!-- Google Analytics -->
+
+  <!-- head_meta -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <!-- head_meta -->
+
+  <!-- head_title -->
+  <title>Git auto deploy latest commit</title>
+  <!-- head_title -->
+
+  <!-- head_links -->
+  <link rel="stylesheet" href="/blog/libs_outer/bootstrap/4.0.0/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/blog/libs_outer/github-markdown-css/2.10.0/github-markdown.css">
+  <link rel="stylesheet" href="/blog/libs_inner/base/base.css">
+  <!-- head_links -->
+
+  <!-- head_links2 -->
+
+<link rel="stylesheet" href="/blog/libs_outer/toastr/2.1.3/toastr.min.css">
+<link rel="stylesheet" href="/blog/libs_outer/highlight/9.12.0/highlight.min.css">
+  <!-- head_links2 -->
+
+  <!-- head_styles -->
+  <!-- head_styles -->
+</head>
+<!-- head -->
+
+<body>
+<div id="vue_app">
+
+<!-- header -->
+<header>
+  <!-- header_inner -->
+  <!-- logo -->
+  <a class="logo_block" href="/blog"><span class="logo_text">Aoik</span></a>
+  <!-- nav -->
+  <nav class="nav_block">
+    <div class="nav_table">
+      <a class="current" href="/blog/posts"><span>Posts</span></a>
+      <a class="" href="/blog/reposts"><span>Reposts</span></a>
+      <a class="" href="/blog/tags"><span>Tags</span></a>
+      <a target="_blank" href="https://github.com/AoiKuiyuyou/Aoik/blob/master/README.md"><span>Github</span></a>
+      <a target="_blank" href="http://aoikuiyuyou.github.io/me.html"><span>Resume</span></a>
+    </div>
+  </nav>
+  <!-- header_inner -->
+</header>
+<!-- header -->
+
+<!-- main -->
+<main>
+  <!-- main_inner -->
+  
+  <!-- breadcrumbs -->
+  <div class="breadcrumbs_block">
+    <a href="/blog">Home</a>
+    <span class="sep">&gt;</span>
+    <a href="/blog/posts">Posts</a>
+    <span class="sep">&gt;</span>
+    <a href="">This</a>
+  </div>
+  <!-- breadcrumbs -->
+
+
+
+  <!-- post_info -->
+  <div class="post_info_block">
+    <div class="tags_block">
+    <a class="tag" href="/blog/tags/git">git</a>
+    </div>
+    <div class="fields_block">
+      <span class="author">Aoik,</span>
+      <span class="create_time">2019.08.24</span>
+    </div>
+  </div>
+  <!-- post_info -->
+
+  <!-- post_content -->
+  <!-- `v-pre` aims to skip Vue parsing -->
+  <article v-pre class="post_content_block markdown-body">
+  <h1 id="git-auto-deploy-latest-commit">Git auto deploy latest commit</h1><p>Clone your repository to <code>/opt/repository</code>.</p>
+<p>Put the following script to <code>/opt/repository</code>.</p>
+<p><strong>auto_deploy_latest_commit.sh</strong>:</p>
+<pre><code>#!/usr/bin/env bash
+
+prog_dir=&quot;$(dirname &quot;$0&quot;)&quot;
+
+last_commit_hash_file_path=&quot;${prog_dir}/last_commit_hash.txt&quot;
+
+touch &quot;$last_commit_hash_file_path&quot;;
+
+last_commit_hash=&quot;$(cat &quot;${prog_dir}/last_commit_hash.txt&quot;)&quot;;
+
+if [ &quot;${#last_commit_hash}&quot; != &quot;40&quot; ]; then
+    last_commit_hash=&#39;&#39;;
+fi
+
+is_first_round=&#39;1&#39;
+
+while true;
+do
+    if [ &quot;${is_first_round}&quot; != &#39;1&#39; ]; then
+        sleep 600;
+    else
+        is_first_round=&#39;&#39;;
+    fi
+
+    latest_commit_hash=&quot;$(git ls-remote origin -h refs/heads/master | cut -d$&#39;\t&#39; -f1)&quot;
+
+    if [ &quot;${#latest_commit_hash}&quot; != &quot;40&quot; ]; then
+        printf &#39;Error: Failed getting lastest commit hash.\n&#39;;
+        continue;
+    fi
+
+    if [ &quot;$latest_commit_hash&quot; == &quot;$last_commit_hash&quot; ]; then
+        continue
+    fi
+
+    printf &#39;# %s\n&#39; &quot;$(date +&quot;%Y-%m-%d %H:%M:%S&quot;)&quot;;
+    printf &#39;New commit: %s.\n&#39; &quot;$latest_commit_hash&quot;;
+
+    last_commit_hash=&quot;$latest_commit_hash&quot;;
+
+    printf &quot;$last_commit_hash&quot; &gt; &quot;$last_commit_hash_file_path&quot;;
+
+    git fetch &amp;&amp;
+    git checkout --force master &amp;&amp;
+    git reset --hard remotes/origin/master &amp;&amp;
+    rm -rf _DEPLOY_DIR_ &amp;&amp;
+    cp -a _RELEASE_DIR_ _DEPLOY_DIR_
+done;</code></pre><p>Replace <code>_DEPLOY_DIR_</code> and <code>_RELEASE_DIR_</code> in the script with the real paths.</p>
+<p>Add a Systemd service:</p>
+<pre><code>cat &lt;&lt;&#39;ZZZ&#39; &gt; /etc/systemd/system/auto_deploy_latest_commit.service
+[Unit]
+Description=auto_deploy_latest_commit
+After=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/opt/repository
+ExecStart=/opt/repository/auto_deploy_latest_commit.sh
+Restart=always
+RestartSec=1
+
+[Install]
+WantedBy=multi-user.target
+ZZZ
+
+systemctl daemon-reload
+
+systemd-analyze verify auto_deploy_latest_commit.service
+
+systemctl start auto_deploy_latest_commit
+
+systemctl status auto_deploy_latest_commit
+
+systemctl enable auto_deploy_latest_commit</code></pre>
+  </article>
+  <!-- post_content -->
+
+  <div class="prev_next_posts_block">
+    <div>
+      <span class="prev_post_prompt">Previous Post: </span><a class="prev_post_link" href="/blog/posts/gdb-add-breakpoint-to-every-function">GDB add breakpoint to every function</a><span class="prev_post_date">(2019.08.21)</span>
+    </div>
+    <div>
+      <span class="next_post_prompt">Next Post: </span><a class="next_post_link" href="/blog/posts/python-private-attribute">Python private attribute</a><span class="next_post_date">(2019.08.24)</span>
+    </div>
+  </div>
+
+  <!-- Special syntax below is for Vue rendering on the client side -->
+  <div v-cloak id="post_comments_block" class="post_comments_block">
+    <p class="title">Comments:</p>
+    <div class="write_comment_block">
+      <div class="comment_info_block">
+        <input v-model="commenter_name" class="commenter_name" placeholder="Your name"></input>
+        <div class="replyto_block">
+          <span>Reply to:</span>
+          <select v-model="replyto_comment_id">
+             <!-- `0` is a special value meaning no replyto -->
+             <option disabled value="0"></option>
+             <option v-for="comment_id in comment_ids" :value="comment_id">{{comment_id}}</option>
+          </select>
+        </div>
+      </div>
+      <textarea v-model="comment_content" class="comment_content" placeholder="Comment"></textarea>
+      <div><input v-on:click="comment_submit_button_on_click" class="submit_button" type="button" value="Submit"></input></div>
+    </div>
+    <ul>
+        <li v-for="comment_info in comment_infos" v-bind:class="comment_info.is_admin ? 'is_admin' : ''">
+            <a v-bind:id="'comment-' + comment_info.comment_id"
+              v-bind:href="'#comment-' + comment_info.comment_id" class="comment_id">{{comment_info.comment_id}}</a>
+            <div class="comment_content">{{comment_info.comment_content}}</div>
+            <div class="comment_info">
+              <span class="commenter_name">{{comment_info.commenter_name}}</span>
+              <span class="create_time">{{comment_info.create_time}}</span>
+              <template v-if="comment_info.replyto_comment_id > 0">
+              <span>to <a v-bind:href="'#comment-' + comment_info.replyto_comment_id">comment-{{comment_info.replyto_comment_id}}</a></span>
+              </template>
+              <a v-bind:data-comment-id="comment_info.comment_id" v-on:click="comment_reply_button_on_click" class="reply_button" href="#post_comments_block">Reply to this</a>
+            </div>
+        </li>
+    </ul>
+  </div>
+  
+
+  <!-- post_toc -->
+  <div id="post_toc_block" class="post_toc_block is_hidden">
+    <a v-on:click="post_toc_hide_link_on_click" data-shown-text="Hide" data-hidden-text="TOC" class="hide_link" href="javascript:void(0)">TOC</a>
+    <span class="title">Contents</span>
+  </div>
+  <!-- post_toc -->
+
+  <!-- back_to_top -->
+  <div id="back_to_top_block" class="back_to_top_block is_hidden">
+    <a v-on:click="back_to_top_button_on_click">
+      <div class="arrow_shape">
+        <div class="arrow_head"></div>
+        <div class="arrow_body"></div>
+      </div>
+    </a>
+  </div>
+  <!-- back_to_top -->
+
+  <div id="post_id" style="display: none;">41</div>
+  <!-- main_inner -->
+</main>
+<!-- main -->
+
+<!-- back_to_top -->
+
+<!-- footer -->
+<footer>
+  <!-- footer_inner -->
+  <span>This blog is powered by my own project <a href="https://github.com/AoiKuiyuyou/AoikSeldomStaticSite">AoikSeldomStaticSite</a>.</span>
+  <!-- footer_inner -->
+</footer>
+<!-- footer -->
+
+<!-- bottom_scripts -->
+
+<script type="text/javascript" src="/blog/libs_outer/jquery/3.3.1/jquery.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/vue/2.5.16/vue.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/toastr/2.1.3/toastr.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/highlight/9.12.0/highlight.min.js"></script>
+<script type="text/javascript" src="/blog/libs_inner/base/post.js"></script>
+<!-- bottom_scripts -->
+
+</div>
+<!-- vue_app -->
+
+</body>
+</html>

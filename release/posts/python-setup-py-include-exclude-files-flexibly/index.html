@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- head -->
+<head>
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-117972998-1"></script>
+  <script>
+    var hostname = window.location.hostname;
+    if (hostname && hostname !== '127.0.0.1' && hostname !== 'localhost' && hostname !== 'aoik.me.local') {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-117972998-1');
+    }
+  </script>
+  <!-- Google Analytics -->
+
+  <!-- head_meta -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <!-- head_meta -->
+
+  <!-- head_title -->
+  <title>Python setup.py include exclude files flexibly</title>
+  <!-- head_title -->
+
+  <!-- head_links -->
+  <link rel="stylesheet" href="/blog/libs_outer/bootstrap/4.0.0/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/blog/libs_outer/github-markdown-css/2.10.0/github-markdown.css">
+  <link rel="stylesheet" href="/blog/libs_inner/base/base.css">
+  <!-- head_links -->
+
+  <!-- head_links2 -->
+
+<link rel="stylesheet" href="/blog/libs_outer/toastr/2.1.3/toastr.min.css">
+<link rel="stylesheet" href="/blog/libs_outer/highlight/9.12.0/highlight.min.css">
+  <!-- head_links2 -->
+
+  <!-- head_styles -->
+  <!-- head_styles -->
+</head>
+<!-- head -->
+
+<body>
+<div id="vue_app">
+
+<!-- header -->
+<header>
+  <!-- header_inner -->
+  <!-- logo -->
+  <a class="logo_block" href="/blog"><span class="logo_text">Aoik</span></a>
+  <!-- nav -->
+  <nav class="nav_block">
+    <div class="nav_table">
+      <a class="current" href="/blog/posts"><span>Posts</span></a>
+      <a class="" href="/blog/reposts"><span>Reposts</span></a>
+      <a class="" href="/blog/tags"><span>Tags</span></a>
+      <a target="_blank" href="https://github.com/AoiKuiyuyou/Aoik/blob/master/README.md"><span>Github</span></a>
+      <a target="_blank" href="http://aoikuiyuyou.github.io/me.html"><span>Resume</span></a>
+    </div>
+  </nav>
+  <!-- header_inner -->
+</header>
+<!-- header -->
+
+<!-- main -->
+<main>
+  <!-- main_inner -->
+  
+  <!-- breadcrumbs -->
+  <div class="breadcrumbs_block">
+    <a href="/blog">Home</a>
+    <span class="sep">&gt;</span>
+    <a href="/blog/posts">Posts</a>
+    <span class="sep">&gt;</span>
+    <a href="">This</a>
+  </div>
+  <!-- breadcrumbs -->
+
+
+
+  <!-- post_info -->
+  <div class="post_info_block">
+    <div class="tags_block">
+    <a class="tag" href="/blog/tags/python">python</a>
+    </div>
+    <div class="fields_block">
+      <span class="author">Aoik,</span>
+      <span class="create_time">2019.04.05</span>
+    </div>
+  </div>
+  <!-- post_info -->
+
+  <!-- post_content -->
+  <!-- `v-pre` aims to skip Vue parsing -->
+  <article v-pre class="post_content_block markdown-body">
+  <h1 id="python-setup-py-include-exclude-files-flexibly">Python setup.py include exclude files flexibly</h1><p>Tested with Python 3.7.0, setuptools 40.9.0, wheel 0.33.1.</p>
+<p>The demo project used in this post can be downloaded from <a href="https://github.com/AoiKuiyuyou/AoikSetupPyIncludeExclude">here</a>.</p>
+<p>The demo project contains these files:</p>
+<pre><code>|-- .gitignore
+|-- LICENSE.txt
+|-- README.md
+|-- README.src.md
+|-- setup.py
+|-- src
+    |-- aoiksetuppyincludeexclude
+        |-- __init__.py
+        |-- excluded_file.txt
+        |-- excluded_module.py
+        |-- excluded_package
+        |   |-- __init__.py
+        |   |-- excluded_file.txt
+        |   |-- excluded_module.py
+        |-- included_file.txt
+        |-- included_module.py
+        |-- included_package
+            |-- __init__.py
+            |-- included_file.txt
+            |-- included_module.py</code></pre><p>The goal is to build a source distribution file and a wheel distribution file containing all files in the <strong>src</strong> directory but excluding ones with <strong>excluded</strong> in their name.</p>
+<p><br><strong>setup.py</strong> take 1:</p>
+<pre><code># coding: utf-8
+from __future__ import absolute_import
+
+import os
+import sys
+
+from setuptools import find_packages
+from setuptools import setup
+
+
+if __name__ == &#39;__main__&#39;:
+    setup(
+        name=&#39;AoikSetupPyIncludeExclude&#39;,
+
+        description=(
+            &#39;How to include and exclude Python module files and data files in&#39;
+            &#39;setup.py flexibly.&#39;
+        ),
+
+        version=&#39;0.0.1&#39;,
+
+        package_dir={
+            &#39;&#39;: &#39;src&#39;
+        },
+
+        packages=find_packages(&#39;src&#39;),
+    )</code></pre><p><br>Build source distribution file:</p>
+<pre><code>python setup.py clean sdist</code></pre><p><br>Files in the source distribution file:</p>
+<pre><code>|-- PKG-INFO
+|-- README.md
+|-- setup.cfg
+|-- setup.py
+|-- src
+    |-- aoiksetuppyincludeexclude
+        |-- __init__.py
+        |-- excluded_module.py
+        |-- excluded_package
+        |   |-- __init__.py
+        |   |-- excluded_module.py
+        |-- included_module.py
+        |-- included_package
+            |-- __init__.py
+            |-- included_module.py</code></pre><p>Wanted files but missing:</p>
+<pre><code>|-- src
+    |-- aoiksetuppyincludeexclude
+        |-- included_file.txt
+        |-- included_package
+            |-- included_file.txt</code></pre><p>Unwanted files:</p>
+<pre><code>|-- src
+    |-- aoiksetuppyincludeexclude
+        |-- excluded_module.py
+        |-- excluded_package
+        |   |-- __init__.py
+        |   |-- excluded_module.py</code></pre><p><br>Build wheel distribution file:</p>
+<pre><code>python setup.py clean bdist_wheel</code></pre><p><br>Files in the wheel file:</p>
+<pre><code>|-- aoiksetuppyincludeexclude
+    |-- __init__.py
+    |-- excluded_module.py
+    |-- excluded_package
+    |   |-- __init__.py
+    |   |-- excluded_module.py
+    |-- included_module.py
+    |-- included_package
+        |-- __init__.py
+        |-- included_module.py</code></pre><p>Wanted files but missing:</p>
+<pre><code>|-- aoiksetuppyincludeexclude
+    |-- included_file.txt
+    |-- included_package
+        |-- included_file.txt</code></pre><p>Unwanted files but present:</p>
+<pre><code>|-- aoiksetuppyincludeexclude
+    |-- excluded_module.py
+    |-- excluded_package
+    |   |-- __init__.py
+    |   |-- excluded_module.py</code></pre><p><br>By default the <strong>setup</strong> function does not include non <strong>.py</strong> files. So we
+specify its <strong>data_files</strong> arguments to include non <strong>.py</strong> files.</p>
+<p><strong>setup.py</strong> take 2:</p>
+<pre><code># coding: utf-8
+from __future__ import absolute_import
+
+from setuptools import find_packages
+from setuptools import setup
+
+
+if __name__ == &#39;__main__&#39;:
+    setup(
+        name=&#39;AoikSetupPyIncludeExclude&#39;,
+
+        description=(
+            &#39;How to include and exclude Python module files and data files in&#39;
+            &#39;setup.py flexibly.&#39;
+        ),
+
+        version=&#39;0.0.1&#39;,
+
+        package_dir={
+            &#39;&#39;: &#39;src&#39;
+        },
+
+        packages=find_packages(&#39;src&#39;),
+
+        data_files=[
+            (
+                &#39;Lib/site-packages/aoiksetuppyincludeexclude&#39;,
+                [
+                    &#39;src/aoiksetuppyincludeexclude/included_file.txt&#39;,
+                ]
+            ),
+            (
+                &#39;Lib/site-packages/aoiksetuppyincludeexclude/included_package&#39;,
+                [
+                    &#39;src/aoiksetuppyincludeexclude/included_package/included_file.txt&#39;,
+                ]
+            ),
+        ],
+    )</code></pre><p><br>Build source distribution file:</p>
+<pre><code>python setup.py clean sdist</code></pre><p><br>Files in the source distribution file:</p>
+<pre><code>|-- PKG-INFO
+|-- README.md
+|-- setup.cfg
+|-- setup.py
+|-- src
+    |-- AoikSetupPyIncludeExclude.egg-info
+    |   |-- PKG-INFO
+    |   |-- SOURCES.txt
+    |   |-- dependency_links.txt
+    |   |-- top_level.txt
+    |-- aoiksetuppyincludeexclude
+        |-- __init__.py
+        |-- excluded_module.py
+        |-- excluded_package
+        |   |-- __init__.py
+        |   |-- excluded_module.py
+        |-- included_file.txt
+        |-- included_module.py
+        |-- included_package
+            |-- __init__.py
+            |-- included_file.txt
+            |-- included_module.py</code></pre><p>Unwanted files but present:</p>
+<pre><code>|-- src
+    |-- aoiksetuppyincludeexclude
+        |-- excluded_module.py
+        |-- excluded_package
+        |   |-- __init__.py
+        |   |-- excluded_module.py</code></pre><p><br>Build wheel distribution file:</p>
+<pre><code>python setup.py clean bdist_wheel</code></pre><p><br>Files in the wheel distribution file:</p>
+<pre><code>|-- AoikSetupPyIncludeExclude-0.0.1.data
+|   |-- data
+|       |-- Lib
+|           |-- site-packages
+|               |-- aoiksetuppyincludeexclude
+|                   |-- included_file.txt
+|                   |-- included_package
+|                       |-- included_file.txt
+|-- AoikSetupPyIncludeExclude-0.0.1.dist-info
+|   |-- METADATA
+|   |-- RECORD
+|   |-- WHEEL
+|   |-- top_level.txt
+|-- aoiksetuppyincludeexclude
+    |-- __init__.py
+    |-- excluded_module.py
+    |-- excluded_package
+    |   |-- __init__.py
+    |   |-- excluded_module.py
+    |   |-- included_module.py
+    |-- included_module.py
+    |-- included_package
+        |-- __init__.py
+        |-- excluded_module.py
+        |-- included_module.py</code></pre><p>Unwanted files but present:</p>
+<pre><code>|-- aoiksetuppyincludeexclude
+    |-- excluded_module.py
+    |-- excluded_package
+    |   |-- __init__.py
+    |   |-- excluded_module.py</code></pre><p>There is a problem with using <strong>data_files</strong>. The destination directory must be specified relative to Python&#39;s root directory. The relative path from Python&#39;s root directory to the project&#39;s package directory may vary on different platforms, so the value <code>Lib/site-packages/aoiksetuppyincludeexclude</code> is likely to break on a different platform.</p>
+<p>And we have not excluded unwanted python module files yet.</p>
+<p><br>The solution to include and exclude files flexibly is to override several functions used by <strong>setuptools</strong> during building a distribution file so that custom filtering can be applied to include or exclude files.</p>
+<p><strong>setup.py</strong> take 3:</p>
+<pre><code># coding: utf-8
+from __future__ import absolute_import
+
+import os
+
+from setuptools import find_packages
+from setuptools import setup
+import setuptools.command.build_py
+
+
+# Create custom `find_packages` function.
+def custom_find_packages(where=&#39;.&#39;, exclude=(), include=(&#39;*&#39;,)):
+    &quot;&quot;&quot;
+    Find package names.
+
+    :param where: Start directory.
+
+    :param exclude: Excluded patterns.
+
+    :param include: Included patterns.
+
+    :return: Accepted package names list.
+    &quot;&quot;&quot;
+    # Find package names.
+    # Delegate to original `find_packages` function.
+    package_names = find_packages(where=where, exclude=exclude, include=include)
+
+    # Accepted package names.
+    accepted_packages_names = []
+
+    # For each package name.
+    for package in package_names:
+        # If the package name contains `excluded`.
+        if &#39;excluded&#39; in package:
+            # Reject the package name.
+            continue
+        # If the package name not contains `excluded`.
+        else:
+            # Accept the package name.
+            accepted_packages_names.append(package)
+
+    # Return accepted package names
+    return accepted_packages_names
+
+
+# Store original `find_package_modules` function
+find_package_modules = \
+    setuptools.command.build_py.build_py.find_package_modules
+
+
+# Create custom `find_package_modules` function
+def custom_find_package_modules(self, package, package_dir):
+    &quot;&quot;&quot;
+    Find module infos in given package.
+
+    :param package: Package name.
+
+    :param package_dir: Package directory path.
+
+    :return: Accepted module infos list.
+    &quot;&quot;&quot;
+    # Find module infos in the package.
+    # Delegate to original `find_package_modules`.
+    infos = find_package_modules(self, package, package_dir)
+
+    # Accepted module infos.
+    accepted_infos = []
+
+    # For each module info.
+    for info in infos:
+        # Unpack the module info.
+        pkg_full_name, module_bare_name, module_path = info
+
+        # If the module name contains `excluded`.
+        if &#39;excluded&#39; in module_bare_name:
+            # Reject the module info.
+            continue
+        # If the module name not contains `excluded`.
+        else:
+            # Accept the module info.
+            accepted_infos.append(
+                (pkg_full_name, module_bare_name, module_path)
+            )
+
+    # Return accepted module info list
+    return accepted_infos
+
+
+# Replace original `find_package_modules` function with the custom one.
+setuptools.command.build_py.build_py.find_package_modules = \
+    custom_find_package_modules
+
+
+# Store original `find_data_files` function.
+find_data_files = \
+    setuptools.command.build_py.build_py.find_data_files
+
+
+# Create custom `find_data_files` function.
+def custom_find_data_files(self, package, src_dir):
+    &quot;&quot;&quot;
+    Find data file paths in given package.
+
+    :param package: Package name.
+
+    :param src_dir: Package directory path.
+
+    :return: Accepted data file paths list.
+    &quot;&quot;&quot;
+    # Accepted data file paths.
+    accepted_file_paths = []
+
+    # For each file in the package directory.
+    for file_bare_name in os.listdir(src_dir):
+        # Get file path.
+        file_path = os.path.join(src_dir, file_bare_name)
+
+        # If the file is regular file.
+        if os.path.isfile(file_path):
+            # If the file is not `.py` file.
+            if not file_bare_name.endswith(&#39;.py&#39;):
+                # If the file name contains `excluded`.
+                if &#39;excluded&#39; in file_bare_name:
+                    # Reject the file path.
+                    continue
+                # If the file name not contains `excluded`.
+                else:
+                    # Accept the file path.
+                    accepted_file_paths.append(file_path)
+
+    # Return accepted data file paths.
+    return accepted_file_paths
+
+
+# Replace original `find_data_files` function with the custom one
+setuptools.command.build_py.build_py.find_data_files = \
+    custom_find_data_files
+
+
+if __name__ == &#39;__main__&#39;:
+    setup(
+        # Project name.
+        name=&#39;AoikSetupPyIncludeExclude&#39;,
+
+        # Project description.
+        description=(
+            &#39;How to include and exclude Python module files and data files in&#39;
+            &#39;setup.py flexibly.&#39;
+        ),
+
+        # Project version.
+        version=&#39;0.0.1&#39;,
+
+        # Package root directory.
+        package_dir={
+            &#39;&#39;: &#39;src&#39;
+        },
+
+        # Find package names in package root directory `src`.
+        packages=custom_find_packages(&#39;src&#39;),
+    )</code></pre><p><br>Build source distribution file:</p>
+<pre><code>python setup.py clean sdist</code></pre><p><br>Files in the source distribution file:</p>
+<pre><code>|-- PKG-INFO
+|-- README.md
+|-- setup.cfg
+|-- setup.py
+|-- src
+    |-- AoikSetupPyIncludeExclude.egg-info
+    |   |-- PKG-INFO
+    |   |-- SOURCES.txt
+    |   |-- dependency_links.txt
+    |   |-- top_level.txt
+    |-- aoiksetuppyincludeexclude
+        |-- __init__.py
+        |-- included_file.txt
+        |-- included_module.py
+        |-- included_package
+            |-- __init__.py
+            |-- included_file.txt
+            |-- included_module.py</code></pre><p><br>Build wheel distribution file:</p>
+<pre><code>python setup.py clean bdist_wheel</code></pre><p><br>Files in the wheel distribution file:</p>
+<pre><code>|-- AoikSetupPyIncludeExclude-0.0.1.dist-info
+|   |-- LICENSE.txt
+|   |-- METADATA
+|   |-- RECORD
+|   |-- WHEEL
+|   |-- top_level.txt
+|-- aoiksetuppyincludeexclude
+    |-- __init__.py
+    |-- included_file.txt
+    |-- included_module.py
+    |-- included_package
+        |-- __init__.py
+        |-- included_file.txt
+        |-- included_module.py</code></pre>
+  </article>
+  <!-- post_content -->
+
+  <div class="prev_next_posts_block">
+    <div>
+      <span class="prev_post_prompt">Previous Post: </span><a class="prev_post_link" href="/blog/reposts/internet-company-architecture-articles">各大互联网公司架构演进之路</a><span class="prev_post_date">(2019.04.04)</span>
+    </div>
+    <div>
+      <span class="next_post_prompt">Next Post: </span><a class="next_post_link" href="/blog/posts/times-per-unit-of-time">Times per unit of time</a><span class="next_post_date">(2019.04.06)</span>
+    </div>
+  </div>
+
+  <!-- Special syntax below is for Vue rendering on the client side -->
+  <div v-cloak id="post_comments_block" class="post_comments_block">
+    <p class="title">Comments:</p>
+    <div class="write_comment_block">
+      <div class="comment_info_block">
+        <input v-model="commenter_name" class="commenter_name" placeholder="Your name"></input>
+        <div class="replyto_block">
+          <span>Reply to:</span>
+          <select v-model="replyto_comment_id">
+             <!-- `0` is a special value meaning no replyto -->
+             <option disabled value="0"></option>
+             <option v-for="comment_id in comment_ids" :value="comment_id">{{comment_id}}</option>
+          </select>
+        </div>
+      </div>
+      <textarea v-model="comment_content" class="comment_content" placeholder="Comment"></textarea>
+      <div><input v-on:click="comment_submit_button_on_click" class="submit_button" type="button" value="Submit"></input></div>
+    </div>
+    <ul>
+        <li v-for="comment_info in comment_infos" v-bind:class="comment_info.is_admin ? 'is_admin' : ''">
+            <a v-bind:id="'comment-' + comment_info.comment_id"
+              v-bind:href="'#comment-' + comment_info.comment_id" class="comment_id">{{comment_info.comment_id}}</a>
+            <div class="comment_content">{{comment_info.comment_content}}</div>
+            <div class="comment_info">
+              <span class="commenter_name">{{comment_info.commenter_name}}</span>
+              <span class="create_time">{{comment_info.create_time}}</span>
+              <template v-if="comment_info.replyto_comment_id > 0">
+              <span>to <a v-bind:href="'#comment-' + comment_info.replyto_comment_id">comment-{{comment_info.replyto_comment_id}}</a></span>
+              </template>
+              <a v-bind:data-comment-id="comment_info.comment_id" v-on:click="comment_reply_button_on_click" class="reply_button" href="#post_comments_block">Reply to this</a>
+            </div>
+        </li>
+    </ul>
+  </div>
+  
+
+  <!-- post_toc -->
+  <div id="post_toc_block" class="post_toc_block is_hidden">
+    <a v-on:click="post_toc_hide_link_on_click" data-shown-text="Hide" data-hidden-text="TOC" class="hide_link" href="javascript:void(0)">TOC</a>
+    <span class="title">Contents</span>
+  </div>
+  <!-- post_toc -->
+
+  <!-- back_to_top -->
+  <div id="back_to_top_block" class="back_to_top_block is_hidden">
+    <a v-on:click="back_to_top_button_on_click">
+      <div class="arrow_shape">
+        <div class="arrow_head"></div>
+        <div class="arrow_body"></div>
+      </div>
+    </a>
+  </div>
+  <!-- back_to_top -->
+
+  <div id="post_id" style="display: none;">25</div>
+  <!-- main_inner -->
+</main>
+<!-- main -->
+
+<!-- back_to_top -->
+
+<!-- footer -->
+<footer>
+  <!-- footer_inner -->
+  <span>This blog is powered by my own project <a href="https://github.com/AoiKuiyuyou/AoikSeldomStaticSite">AoikSeldomStaticSite</a>.</span>
+  <!-- footer_inner -->
+</footer>
+<!-- footer -->
+
+<!-- bottom_scripts -->
+
+<script type="text/javascript" src="/blog/libs_outer/jquery/3.3.1/jquery.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/vue/2.5.16/vue.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/toastr/2.1.3/toastr.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/highlight/9.12.0/highlight.min.js"></script>
+<script type="text/javascript" src="/blog/libs_inner/base/post.js"></script>
+<!-- bottom_scripts -->
+
+</div>
+<!-- vue_app -->
+
+</body>
+</html>

@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- head -->
+<head>
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-117972998-1"></script>
+  <script>
+    var hostname = window.location.hostname;
+    if (hostname && hostname !== '127.0.0.1' && hostname !== 'localhost' && hostname !== 'aoik.me.local') {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-117972998-1');
+    }
+  </script>
+  <!-- Google Analytics -->
+
+  <!-- head_meta -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <!-- head_meta -->
+
+  <!-- head_title -->
+  <title>Python's compiler - from tokens to CST</title>
+  <!-- head_title -->
+
+  <!-- head_links -->
+  <link rel="stylesheet" href="/blog/libs_outer/bootstrap/4.0.0/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/blog/libs_outer/github-markdown-css/2.10.0/github-markdown.css">
+  <link rel="stylesheet" href="/blog/libs_inner/base/base.css">
+  <!-- head_links -->
+
+  <!-- head_links2 -->
+
+<link rel="stylesheet" href="/blog/libs_outer/toastr/2.1.3/toastr.min.css">
+<link rel="stylesheet" href="/blog/libs_outer/highlight/9.12.0/highlight.min.css">
+  <!-- head_links2 -->
+
+  <!-- head_styles -->
+  <!-- head_styles -->
+</head>
+<!-- head -->
+
+<body>
+<div id="vue_app">
+
+<!-- header -->
+<header>
+  <!-- header_inner -->
+  <!-- logo -->
+  <a class="logo_block" href="/blog"><span class="logo_text">Aoik</span></a>
+  <!-- nav -->
+  <nav class="nav_block">
+    <div class="nav_table">
+      <a class="current" href="/blog/posts"><span>Posts</span></a>
+      <a class="" href="/blog/reposts"><span>Reposts</span></a>
+      <a class="" href="/blog/tags"><span>Tags</span></a>
+      <a target="_blank" href="https://github.com/AoiKuiyuyou/Aoik/blob/master/README.md"><span>Github</span></a>
+      <a target="_blank" href="http://aoikuiyuyou.github.io/me.html"><span>Resume</span></a>
+    </div>
+  </nav>
+  <!-- header_inner -->
+</header>
+<!-- header -->
+
+<!-- main -->
+<main>
+  <!-- main_inner -->
+  
+  <!-- breadcrumbs -->
+  <div class="breadcrumbs_block">
+    <a href="/blog">Home</a>
+    <span class="sep">&gt;</span>
+    <a href="/blog/posts">Posts</a>
+    <span class="sep">&gt;</span>
+    <a href="">This</a>
+  </div>
+  <!-- breadcrumbs -->
+
+
+
+  <!-- post_info -->
+  <div class="post_info_block">
+    <div class="tags_block">
+    <a class="tag" href="/blog/tags/python">python</a>
+    <a class="tag" href="/blog/tags/compiler">compiler</a>
+    <a class="tag" href="/blog/tags/parser">parser</a>
+    <a class="tag" href="/blog/tags/source-code-study">source-code-study</a>
+    <a class="tag" href="/blog/tags/吸星大法强吃源码">吸星大法强吃源码</a>
+    </div>
+    <div class="fields_block">
+      <span class="author">Aoik,</span>
+      <span class="create_time">2019.10.23</span>
+    </div>
+  </div>
+  <!-- post_info -->
+
+  <!-- post_content -->
+  <!-- `v-pre` aims to skip Vue parsing -->
+  <article v-pre class="post_content_block markdown-body">
+  <h1 id="python-39-s-compiler-from-tokens-to-cst">Python&#39;s compiler - from tokens to CST</h1><p>Python&#39;s compiler series:</p>
+<ul>
+<li><a href="/blog/posts/python-3.8.0-execution-flow">Python 3.8.0 execution flow</a></li>
+<li><a href="/blog/posts/python-compiler-from-grammar-to-dfa">Python&#39;s compiler - from grammar to DFA</a></li>
+<li><a href="/blog/posts/python-compiler-the-grammar-file-is-not-ll1-but-the-parser-is">Python&#39;s compiler - the grammar file is not LL(1) but the parser is</a></li>
+<li><a href="/blog/posts/python-compiler-from-tokens-to-cst">Python&#39;s compiler - from tokens to CST</a></li>
+<li><a href="/blog/posts/python-compiler-from-cst-to-ast">Python&#39;s compiler - from CST to AST</a></li>
+</ul>
+<p><br>In Python 3.8.0, the <a href="https://github.com/python/cpython/tree/v3.8.0/Parser/pgen">pgen</a> program converts the <a href="https://github.com/python/cpython/blob/v3.8.0/Grammar/Grammar">grammar file</a> into DFA transition diagram, stored as files <a href="https://github.com/python/cpython/blob/v3.8.0/Include/graminit.h">Include/graminit.h</a> and <a href="https://github.com/python/cpython/blob/v3.8.0/Python/graminit.c">Python/graminit.c</a>.</p>
+<p>The parser uses the DFA transition diagram to parse Python source code to CST.</p>
+<p>In function <a href="https://github.com/python/cpython/blob/v3.8.0/Python/pythonrun.c#L1380">Python/pythonrun.c::PyParser_ASTFromFileObject</a>, the data structure <code>grammar _PyParser_Grammar</code> defined in <a href="https://github.com/python/cpython/blob/v3.8.0/Python/graminit.c#L2696">Python/graminit.c</a> that represents the DFA transition diagram is used.</p>
+<p>In function <a href="https://github.com/python/cpython/blob/v3.8.0/Parser/parser.c#L91">Parser/parser.c::PyParser_New</a>, a parser state is created and the starting non-terminal&#39;s DFA is pushed to the parser state&#39;s stack.</p>
+<p>In function <a href="https://github.com/python/cpython/blob/v3.8.0/Parser/parsetok.c#L347">Parser/parsetok.c::parsetok</a>, after reading a token, it is fed into function <a href="https://github.com/python/cpython/blob/v3.8.0/Parser/parser.c#L231">Parser/parser.c::PyParser_AddToken</a>, where the DFA on the top of the parser state&#39;s stack transits according to the token. CST nodes are created along with the transitions.</p>
+<p><br><a href="https://github.com/python/cpython/blob/v3.8.0/Parser/parsetok.c#L232">Parser/parsetok.c::parsetok</a></p>
+<pre><code>parsetok.c--parsetok
+
+  parser.c--PyParser_New
+
+  loop:
+    # Get next token.
+    tokenizer.c--PyTokenizer_Get
+
+    # Transit DFA and create CST nodes.
+    parser.c--PyParser_AddToken</code></pre><p><br><a href="https://github.com/python/cpython/blob/v3.8.0/Parser/parser.c#L72">Parser/parser.c::PyParser_New</a></p>
+<pre><code>parser.c--PyParser_New
+
+  acceler.c--PyGrammar_AddAccelerators
+
+    acceler.c--fixdfa
+
+      acceler.c--fixstate
+
+  # Create parser state.
+  ps = (parser_state *)PyMem_MALLOC(sizeof(parser_state));
+
+  # Store the grammar.
+  ps-&gt;p_grammar = g
+
+  # Store the CST root node.
+  ps-&gt;p_tree = PyNode_New(start)
+
+  # Reset the stack.
+  s_reset(&amp;ps-&gt;p_stack)
+
+  # Push the starting entry to stack.
+  # Each entry stores the CST node, the DFA, the in-DFA state index.
+  # `PyGrammar_FindDFA` gets the DFA by the DFA ID `start`.
+  # In-DFA state index starts with 0.
+  s_push(&amp;ps-&gt;p_stack, PyGrammar_FindDFA(g, start), ps-&gt;p_tree)</code></pre><p><br><a href="https://github.com/python/cpython/blob/v3.8.0/Parser/acceler.c#L62">Parser/acceler.c::fixstate</a></p>
+<pre><code>static void
+fixstate(grammar *g, state *s)
+{
+    const arc *a;
+    int k;
+    int *accel;
+    int nl = g-&gt;g_ll.ll_nlabels;
+    s-&gt;s_accept = 0;
+    // If the grammar has n labels (terminal and non-terminal symbols), create an array of n ints.
+    accel = (int *) PyObject_MALLOC(nl * sizeof(int));
+    if (accel == NULL) {
+        fprintf(stderr, &quot;no mem to build parser accelerators\n&quot;);
+        exit(1);
+    }
+    for (k = 0; k &lt; nl; k++)
+        // `-1` means no next state.
+        accel[k] = -1;
+    a = s-&gt;s_arc;
+    // For the state&#39;s each arc.
+    for (k = s-&gt;s_narcs; --k &gt;= 0; a++) {
+        // Get the label index.
+        int lbl = a-&gt;a_lbl;
+        // Get the label object.
+        const label *l = &amp;g-&gt;g_ll.ll_label[lbl];
+        // Get the symbol type.
+        // Different labels may have same symbol type.
+        // E.g. different keywords all have symbol type NAME.
+        // Terminal symbol types are defined in `token.h`.
+        // Non-terminal symbol types are defined in `graminit.h`.
+        int type = l-&gt;lb_type;
+        // The 7th bit will be used (at 3BJZX) as an indicator for non-terminal symbol so the number of states of a DFA is limited to 2^7 = 128.
+        if (a-&gt;a_arrow &gt;= (1 &lt;&lt; 7)) {
+            printf(&quot;XXX too many states!\n&quot;);
+            continue;
+        }
+        // If the symbol is non-terminal.
+        if (ISNONTERMINAL(type)) {
+            // Get the DFA of the non-terminal.
+            const dfa *d1 = PyGrammar_FindDFA(g, type);
+            int ibit;
+            // The symbol type for non-terminal minus NT_OFFSET is limited to 128 to keep the accelerator value within 2 bytes.
+            if (type - NT_OFFSET &gt;= (1 &lt;&lt; 7)) {
+                printf(&quot;XXX too high nonterminal number!\n&quot;);
+                continue;
+            }
+            // For each label of the grammar.
+            for (ibit = 0; ibit &lt; g-&gt;g_ll.ll_nlabels; ibit++) {
+                // If the label is in the non-terminal&#39;s first set.
+                if (testbit(d1-&gt;d_first, ibit)) {
+                    if (accel[ibit] != -1)
+                        printf(&quot;XXX ambiguity!\n&quot;);
+                    // 3BJZX
+                    // The first byte&#39;s lower 7 bits store the next state index.
+                    // The first byte&#39;s zero-based bit 7 stores 1 to indicate a non-terminal.
+                    // The second byte stores the non-terminal symbol type minus NT_OFFSET.
+                    accel[ibit] = a-&gt;a_arrow | (1 &lt;&lt; 7) |
+                        ((type - NT_OFFSET) &lt;&lt; 8);
+                }
+            }
+        }
+        else if (lbl == EMPTY)
+            s-&gt;s_accept = 1;
+        else if (lbl &gt;= 0 &amp;&amp; lbl &lt; nl)
+            accel[lbl] = a-&gt;a_arrow;
+    }
+    // Get the upper bound label index that has next state, exclusive.
+    while (nl &gt; 0 &amp;&amp; accel[nl-1] == -1)
+        nl--;
+    // Get the lower bound label index that has next state.
+    for (k = 0; k &lt; nl &amp;&amp; accel[k] == -1;)
+        k++;
+    if (k &lt; nl) {
+        int i;
+        // Create accelerator array.
+        s-&gt;s_accel = (int *) PyObject_MALLOC((nl-k) * sizeof(int));
+        if (s-&gt;s_accel == NULL) {
+            fprintf(stderr, &quot;no mem to add parser accelerators\n&quot;);
+            exit(1);
+        }
+        // Set lower bound label index.
+        s-&gt;s_lower = k;
+        // Set upper bound label index, exclusive.
+        s-&gt;s_upper = nl;
+        for (i = 0; k &lt; nl; i++, k++)
+            // Set the accelerator value.
+            s-&gt;s_accel[i] = accel[k];
+    }
+    PyObject_FREE(accel);
+}</code></pre><p><br><a href="https://github.com/python/cpython/blob/v3.8.0/Parser/parser.c#L231">Parser/parser.c::PyParser_AddToken</a></p>
+<pre><code>int
+PyParser_AddToken(parser_state *ps, int type, char *str,
+                  int lineno, int col_offset,
+                  int end_lineno, int end_col_offset,
+                  int *expected_ret)
+{
+    int ilabel;
+    int err;
+
+    D(printf(&quot;Token %s/&#39;%s&#39; ... &quot;, _PyParser_TokenNames[type], str));
+
+    /* Find out which label this token is */
+    # Get the label index of the token.
+    # If the token type is NAME, it will compare the token value because keyword tokens are NAME type too.
+    ilabel = classify(ps, type, str);
+
+    if (ilabel &lt; 0)
+        return E_SYNTAX;
+
+    /* Loop until the token is shifted or an error occurred */
+    for (;;) {
+        /* Fetch the current dfa and state */
+        // Get current DFA.
+        const dfa *d = ps-&gt;p_stack.s_top-&gt;s_dfa;
+
+        // Get current in-DFA state.
+        state *s = &amp;d-&gt;d_state[ps-&gt;p_stack.s_top-&gt;s_state];
+
+        // If the token&#39;s label index is within the range that might lead to the next state.
+        if (s-&gt;s_lower &lt;= ilabel &amp;&amp; ilabel &lt; s-&gt;s_upper) {
+            // Get the next state ID.
+            int x = s-&gt;s_accel[ilabel - s-&gt;s_lower];
+
+            // If have the next state ID.
+            if (x != -1) {
+                // If the next state is non-terminal, then we need to push the non-terminal&#39;s DFA to stack.
+                // 7th bit (0-based) indicates non-terminal. This is enforced at 3BJZX.
+                if (x &amp; (1&lt;&lt;7)) {
+                    /* Push non-terminal */
+                    // Higher byte of `x` stores the DFA index.
+                    // DFA index plus NT_OFFSET gets the DFA ID.
+                    // DFA_IDs are the IDs for non-terminals defined in `graminit.h`. They start with 256 (NT_OFFSET).
+                    int nt = (x &gt;&gt; 8) + NT_OFFSET;
+                    // Lower 7 bits of `x` store the next state index of current DFA after the non-terminal is popped.
+                    int arrow = x &amp; ((1&lt;&lt;7)-1);
+                    if (nt == func_body_suite &amp;&amp; !(ps-&gt;p_flags &amp; PyCF_TYPE_COMMENTS)) {
+                        /* When parsing type comments is not requested,
+                           we can provide better errors about bad indentation
+                           by using &#39;suite&#39; for the body of a funcdef */
+                        D(printf(&quot; [switch func_body_suite to suite]&quot;));
+                        nt = suite;
+                    }
+                    // Get the non-terminal&#39;s DFA.
+                    const dfa *d1 = PyGrammar_FindDFA(
+                        ps-&gt;p_grammar, nt);
+                    // Create a CST node for the non-terminal and add as child of current node.
+                    // Set current DFA&#39;s state to the next state so that after the non-terminal is popped, we are in the next state.
+                    // Push the non-terminal&#39;s CST node and DFA to stack. The new DFA starts with state 0.
+                    if ((err = push(&amp;ps-&gt;p_stack, nt, d1,
+                        arrow, lineno, col_offset,
+                        end_lineno, end_col_offset)) &gt; 0) {
+                        D(printf(&quot; MemError: push\n&quot;));
+                        return err;
+                    }
+                    D(printf(&quot; Push &#39;%s&#39;\n&quot;, d1-&gt;d_name));
+
+                    # Continue to process the token with the new DFA.
+                    continue;
+                }
+
+                // Create a CST node for the terminal token and add as child of current node. Set current DFA&#39;s state to the next state.
+                // Lower 7 bits of `x` store the next state index.
+                /* Shift the token */
+                if ((err = shift(&amp;ps-&gt;p_stack, type, str,
+                                x, lineno, col_offset,
+                                end_lineno, end_col_offset)) &gt; 0) {
+                    D(printf(&quot; MemError: shift.\n&quot;));
+                    return err;
+                }
+                D(printf(&quot; Shift.\n&quot;));
+                /* Pop while we are in an accept-only state */
+                while (s = &amp;d-&gt;d_state
+                                [ps-&gt;p_stack.s_top-&gt;s_state],
+                    s-&gt;s_accept &amp;&amp; s-&gt;s_narcs == 1) {
+                    D(printf(&quot;  DFA &#39;%s&#39;, state %d: &quot;
+                             &quot;Direct pop.\n&quot;,
+                             d-&gt;d_name,
+                             ps-&gt;p_stack.s_top-&gt;s_state));
+                    s_pop(&amp;ps-&gt;p_stack);
+                    if (s_empty(&amp;ps-&gt;p_stack)) {
+                        D(printf(&quot;  ACCEPT.\n&quot;));
+                        return E_DONE;
+                    }
+                    d = ps-&gt;p_stack.s_top-&gt;s_dfa;
+                }
+                return E_OK;
+            }
+        }
+
+        // If the token&#39;s label index does notlead to the next state.
+        // If the current state is an accepting state.
+        if (s-&gt;s_accept) {
+            /* Pop this dfa and try again */
+            s_pop(&amp;ps-&gt;p_stack);
+            D(printf(&quot; Pop ...\n&quot;));
+            if (s_empty(&amp;ps-&gt;p_stack)) {
+                D(printf(&quot; Error: bottom of stack.\n&quot;));
+                return E_SYNTAX;
+            }
+            # Continue to process the token with the new DFA.
+            continue;
+        }
+
+        /* Stuck, report syntax error */
+        D(printf(&quot; Error.\n&quot;));
+        if (expected_ret) {
+            if (s-&gt;s_lower == s-&gt;s_upper - 1) {
+                /* Only one possible expected token */
+                *expected_ret = ps-&gt;p_grammar-&gt;
+                    g_ll.ll_label[s-&gt;s_lower].lb_type;
+            }
+            else
+                *expected_ret = -1;
+        }
+        return E_SYNTAX;
+    }
+}</code></pre>
+  </article>
+  <!-- post_content -->
+
+  <div class="prev_next_posts_block">
+    <div>
+      <span class="prev_post_prompt">Previous Post: </span><a class="prev_post_link" href="/blog/posts/python-3.8.0-execution-flow">Python 3.8.0 execution flow</a><span class="prev_post_date">(2019.10.20)</span>
+    </div>
+    <div>
+      <span class="next_post_prompt">Next Post: </span><a class="next_post_link" href="/blog/reposts/why-windows-ios-are-smooth-but-linux-android-are-laggy">为什么Windows/iOS操作很流畅而Linux/Android却很卡顿呢</a><span class="next_post_date">(2019.10.26)</span>
+    </div>
+  </div>
+
+  <!-- Special syntax below is for Vue rendering on the client side -->
+  <div v-cloak id="post_comments_block" class="post_comments_block">
+    <p class="title">Comments:</p>
+    <div class="write_comment_block">
+      <div class="comment_info_block">
+        <input v-model="commenter_name" class="commenter_name" placeholder="Your name"></input>
+        <div class="replyto_block">
+          <span>Reply to:</span>
+          <select v-model="replyto_comment_id">
+             <!-- `0` is a special value meaning no replyto -->
+             <option disabled value="0"></option>
+             <option v-for="comment_id in comment_ids" :value="comment_id">{{comment_id}}</option>
+          </select>
+        </div>
+      </div>
+      <textarea v-model="comment_content" class="comment_content" placeholder="Comment"></textarea>
+      <div><input v-on:click="comment_submit_button_on_click" class="submit_button" type="button" value="Submit"></input></div>
+    </div>
+    <ul>
+        <li v-for="comment_info in comment_infos" v-bind:class="comment_info.is_admin ? 'is_admin' : ''">
+            <a v-bind:id="'comment-' + comment_info.comment_id"
+              v-bind:href="'#comment-' + comment_info.comment_id" class="comment_id">{{comment_info.comment_id}}</a>
+            <div class="comment_content">{{comment_info.comment_content}}</div>
+            <div class="comment_info">
+              <span class="commenter_name">{{comment_info.commenter_name}}</span>
+              <span class="create_time">{{comment_info.create_time}}</span>
+              <template v-if="comment_info.replyto_comment_id > 0">
+              <span>to <a v-bind:href="'#comment-' + comment_info.replyto_comment_id">comment-{{comment_info.replyto_comment_id}}</a></span>
+              </template>
+              <a v-bind:data-comment-id="comment_info.comment_id" v-on:click="comment_reply_button_on_click" class="reply_button" href="#post_comments_block">Reply to this</a>
+            </div>
+        </li>
+    </ul>
+  </div>
+  
+
+  <!-- post_toc -->
+  <div id="post_toc_block" class="post_toc_block is_hidden">
+    <a v-on:click="post_toc_hide_link_on_click" data-shown-text="Hide" data-hidden-text="TOC" class="hide_link" href="javascript:void(0)">TOC</a>
+    <span class="title">Contents</span>
+  </div>
+  <!-- post_toc -->
+
+  <!-- back_to_top -->
+  <div id="back_to_top_block" class="back_to_top_block is_hidden">
+    <a v-on:click="back_to_top_button_on_click">
+      <div class="arrow_shape">
+        <div class="arrow_head"></div>
+        <div class="arrow_body"></div>
+      </div>
+    </a>
+  </div>
+  <!-- back_to_top -->
+
+  <div id="post_id" style="display: none;">47</div>
+  <!-- main_inner -->
+</main>
+<!-- main -->
+
+<!-- back_to_top -->
+
+<!-- footer -->
+<footer>
+  <!-- footer_inner -->
+  <span>This blog is powered by my own project <a href="https://github.com/AoiKuiyuyou/AoikSeldomStaticSite">AoikSeldomStaticSite</a>.</span>
+  <!-- footer_inner -->
+</footer>
+<!-- footer -->
+
+<!-- bottom_scripts -->
+
+<script type="text/javascript" src="/blog/libs_outer/jquery/3.3.1/jquery.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/vue/2.5.16/vue.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/toastr/2.1.3/toastr.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/highlight/9.12.0/highlight.min.js"></script>
+<script type="text/javascript" src="/blog/libs_inner/base/post.js"></script>
+<!-- bottom_scripts -->
+
+</div>
+<!-- vue_app -->
+
+</body>
+</html>

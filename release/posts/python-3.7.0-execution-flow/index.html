@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- head -->
+<head>
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-117972998-1"></script>
+  <script>
+    var hostname = window.location.hostname;
+    if (hostname && hostname !== '127.0.0.1' && hostname !== 'localhost' && hostname !== 'aoik.me.local') {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-117972998-1');
+    }
+  </script>
+  <!-- Google Analytics -->
+
+  <!-- head_meta -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <!-- head_meta -->
+
+  <!-- head_title -->
+  <title>Python 3.7.0 execution flow</title>
+  <!-- head_title -->
+
+  <!-- head_links -->
+  <link rel="stylesheet" href="/blog/libs_outer/bootstrap/4.0.0/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/blog/libs_outer/github-markdown-css/2.10.0/github-markdown.css">
+  <link rel="stylesheet" href="/blog/libs_inner/base/base.css">
+  <!-- head_links -->
+
+  <!-- head_links2 -->
+<link rel="stylesheet" href="/blog/libs_outer/toastr/2.1.3/toastr.min.css">
+  <!-- head_links2 -->
+
+  <!-- head_styles -->
+  <!-- head_styles -->
+</head>
+<!-- head -->
+
+<body>
+<div id="vue_app">
+
+<!-- header -->
+<header>
+  <!-- header_inner -->
+  <!-- logo -->
+  <a class="logo_block" href="/blog"><span class="logo_text">Aoik</span></a>
+  <!-- nav -->
+  <nav class="nav_block">
+    <div class="nav_table">
+      <a class="current" href="/blog/posts"><span>Posts</span></a>
+      <a class="" href="/blog/reposts"><span>Reposts</span></a>
+      <a class="" href="/blog/tags"><span>Tags</span></a>
+      <a target="_blank" href="https://github.com/AoiKuiyuyou/Aoik/blob/master/README.md"><span>Github</span></a>
+      <a target="_blank" href="http://aoikuiyuyou.github.io/me.html"><span>Resume</span></a>
+    </div>
+  </nav>
+  <!-- header_inner -->
+</header>
+<!-- header -->
+
+<!-- main -->
+<main>
+  <!-- main_inner -->
+  
+  <!-- breadcrumbs -->
+  <div class="breadcrumbs_block">
+    <a href="/blog">Home</a>
+    <span class="sep">&gt;</span>
+    <a href="/blog/posts">Posts</a>
+    <span class="sep">&gt;</span>
+    <a href="">This</a>
+  </div>
+  <!-- breadcrumbs -->
+
+
+
+  <!-- post_info -->
+  <div class="post_info_block">
+    <div class="tags_block">
+    <a class="tag" href="/blog/tags/python">python</a>
+    <a class="tag" href="/blog/tags/execution-flow">execution-flow</a>
+    <a class="tag" href="/blog/tags/source-code-study">source-code-study</a>
+    <a class="tag" href="/blog/tags/吸星大法强吃源码">吸星大法强吃源码</a>
+    </div>
+    <div class="fields_block">
+      <span class="author">Aoik,</span>
+      <span class="create_time">2019.03.26</span>
+    </div>
+  </div>
+  <!-- post_info -->
+
+  <!-- post_content -->
+  <!-- `v-pre` aims to skip Vue parsing -->
+  <article v-pre class="post_content_block markdown-body">
+  <h1 id="python-3-7-0-execution-flow">Python 3.7.0 execution flow</h1><pre><code>python.c--wmain
+
+  main.c--Py_Main
+
+    main.c--pymain_main
+
+      main.c--pymain_init
+
+      main.c--pymain_cmdline
+
+      main.c--pymain_init_stdio
+
+      pylifecycle.c--_Py_InitializeCore
+
+        pylifecycle.c--_PyRuntime_Initialize
+
+        obmalloc.c--_PyMem_SetupAllocators
+
+        bootstrap_hash.c--_Py_HashRandomization_Init
+
+        pystate.c--_PyInterpreterState_Enable
+
+        pystate.c--PyInterpreterState_New
+
+        pylifecycle.c--_PyCoreConfig_Copy
+
+        pystate.c--PyThreadState_New
+
+        pystate.c--PyThreadState_Swap
+
+        ceval.c--_PyEval_FiniThreads
+
+        pystate.c--_PyGILState_Init
+
+        ceval.c--PyEval_InitThreads
+
+        object.c--_Py_ReadyTypes
+
+        frameobject.c--_PyFrame_Init
+
+        longobject.c--_PyLong_Init
+
+        bytearrayobject.c--PyByteArray_Init
+
+        floatobject.c--_PyFloat_Init
+
+        PyObject *modules = PyDict_New()
+
+        sysmodule.c--_PySys_BeginInit
+
+        interp-&gt;sysdict = PyModule_GetDict(sysmod)
+
+        PyDict_SetItemString(interp-&gt;sysdict, &quot;modules&quot;, modules)
+
+        import.c--_PyImport_FixupBuiltin
+
+        unicodeobject.c--_PyUnicode_Init
+
+        structseq.c--_PyStructSequence_Init
+
+        bltinmodule.c--_PyBuiltin_Init
+
+        import.c--_PyImport_FixupBuiltin
+
+        interp-&gt;builtins = PyModule_GetDict(bimod)
+
+        exceptions.c--_PyExc_Init
+
+        pstderr = PyFile_NewStdPrinter(fileno(stderr))
+
+        _PySys_SetObjectId(&amp;PyId_stderr, pstderr)
+
+        PySys_SetObject(&quot;__stderr__&quot;, pstderr)
+
+        import.c--_PyImport_Init
+
+        import.c--_PyImportHooks_Init
+
+        _warnings.c--_PyWarnings_Init
+
+        context.c--_PyContext_Init
+
+        pylifecycle.c--initimport
+
+      main.c--pymain_init_python_main
+
+        pystate.h--_PyMainInterpreterConfig_INIT
+
+        main.c--_PyMainInterpreterConfig_Read
+
+        pylifecycle.c--_Py_InitializeMainInterpreter
+
+        main.c--_PyMainInterpreterConfig_Clear
+
+      main.c--pymain_init_sys_path
+
+      main.c--pymain_run_python
+
+        main.c--pymain_header
+
+        main.c--pymain_import_readline
+
+        # OR-START
+        main.c--pymain_run_command
+
+        # OR
+        main.c--pymain_run_module
+
+        # OR
+        main.c--pymain_run_filename...(2CMFT)
+        # OR-END
+
+        main.c--pymain_repl
+
+
+# 2CMFT
+main.c--pymain_run_filename
+  main.c--pymain_run_startup
+
+  main.c--pymain_run_interactive_hook
+
+  main.c--pymain_run_main_from_importer
+
+  main.c--pymain_open_filename
+
+  main.c--pymain_run_file
+
+    ceval.c--Py_MakePendingCalls
+
+    pythonrun.c--PyRun_AnyFileExFlags
+
+      pythonrun.c--PyRun_InteractiveLoopFlags
+
+      pythonrun.c--PyRun_SimpleFileExFlags
+
+        import.c--PyImport_AddModule
+
+        # OR-START
+        pythonrun.c--set_main_loader(d, filename, &quot;SourcelessFileLoader&quot;)
+
+        pythonrun.c--run_pyc_file
+
+        # OR
+        pythonrun.c--set_main_loader(d, filename, &quot;SourceFileLoader&quot;)
+
+        pythonrun.c--PyRun_FileExFlags...(5CDIU)
+        # OR-END
+
+
+# 5CDIU
+pythonrun.c--PyRun_FileExFlags
+
+  pyarena.c--PyArena_New
+
+  # Parse source code into an AST node.
+  pythonrun.c--PyParser_ASTFromFileObject
+
+    parsetok.c--PyParser_ParseFileObject
+
+      tokenizer.c--PyTokenizer_FromFile
+
+      parsetok.c--parsetok
+
+        parser.c--PyParser_New
+
+          acceler.c--PyGrammar_AddAccelerators
+
+          ps-&gt;p_grammar = g
+
+          ps-&gt;p_tree = PyNode_New(start)
+
+          s_reset(&amp;ps-&gt;p_stack)
+
+          s_push(&amp;ps-&gt;p_stack, PyGrammar_FindDFA(g, start), ps-&gt;p_tree)
+
+        # DFA state transition happens inside this function.
+        parser.c--PyParser_AddToken
+
+    ast.c--PyAST_FromNodeObject
+
+  pythonrun.c--run_mod
+
+    # Compile AST into bytecode.
+    compile.c--PyAST_CompileObject
+
+      compile.c--compiler_init
+
+      future.c--PyFuture_FromASTObject
+
+      ast_opt.c--_PyAST_Optimize
+
+      symtable.c--PySymtable_BuildObject
+
+      compile.c--compiler_mod
+
+        compile.c--compiler_enter_scope
+
+        compile.c--compiler_body
+
+          asdl.h--asdl_seq_GET
+
+          compile.c--VISIT(c, expr, st-&gt;v.Expr.value)
+
+          compile.c--VISIT(c, stmt, (stmt_ty)asdl_seq_GET(stmts, i))
+
+        compile.c--assemble
+
+        compile.c--compiler_exit_scope
+
+    # Run bytecode.
+    ceval.c--PyEval_EvalCode
+
+      ceval.c--PyEval_EvalCodeEx
+
+        ceval.c--_PyEval_EvalCodeWithName</code></pre>
+  </article>
+  <!-- post_content -->
+
+  <div class="prev_next_posts_block">
+    <div>
+      <span class="prev_post_prompt">Previous Post: </span><a class="prev_post_link" href="/blog/posts/python-convert-int-to-binary-efficiently">Python convert int to binary efficiently</a><span class="prev_post_date">(2019.03.25)</span>
+    </div>
+    <div>
+      <span class="next_post_prompt">Next Post: </span><a class="next_post_link" href="/blog/posts/lua-function-call-mechanism">Lua function call mechanism</a><span class="next_post_date">(2019.03.28)</span>
+    </div>
+  </div>
+
+  <!-- Special syntax below is for Vue rendering on the client side -->
+  <div v-cloak id="post_comments_block" class="post_comments_block">
+    <p class="title">Comments:</p>
+    <div class="write_comment_block">
+      <div class="comment_info_block">
+        <input v-model="commenter_name" class="commenter_name" placeholder="Your name"></input>
+        <div class="replyto_block">
+          <span>Reply to:</span>
+          <select v-model="replyto_comment_id">
+             <!-- `0` is a special value meaning no replyto -->
+             <option disabled value="0"></option>
+             <option v-for="comment_id in comment_ids" :value="comment_id">{{comment_id}}</option>
+          </select>
+        </div>
+      </div>
+      <textarea v-model="comment_content" class="comment_content" placeholder="Comment"></textarea>
+      <div><input v-on:click="comment_submit_button_on_click" class="submit_button" type="button" value="Submit"></input></div>
+    </div>
+    <ul>
+        <li v-for="comment_info in comment_infos" v-bind:class="comment_info.is_admin ? 'is_admin' : ''">
+            <a v-bind:id="'comment-' + comment_info.comment_id"
+              v-bind:href="'#comment-' + comment_info.comment_id" class="comment_id">{{comment_info.comment_id}}</a>
+            <div class="comment_content">{{comment_info.comment_content}}</div>
+            <div class="comment_info">
+              <span class="commenter_name">{{comment_info.commenter_name}}</span>
+              <span class="create_time">{{comment_info.create_time}}</span>
+              <template v-if="comment_info.replyto_comment_id > 0">
+              <span>to <a v-bind:href="'#comment-' + comment_info.replyto_comment_id">comment-{{comment_info.replyto_comment_id}}</a></span>
+              </template>
+              <a v-bind:data-comment-id="comment_info.comment_id" v-on:click="comment_reply_button_on_click" class="reply_button" href="#post_comments_block">Reply to this</a>
+            </div>
+        </li>
+    </ul>
+  </div>
+  
+
+  <!-- post_toc -->
+  <div id="post_toc_block" class="post_toc_block is_hidden">
+    <a v-on:click="post_toc_hide_link_on_click" data-shown-text="Hide" data-hidden-text="TOC" class="hide_link" href="javascript:void(0)">TOC</a>
+    <span class="title">Contents</span>
+  </div>
+  <!-- post_toc -->
+
+  <!-- back_to_top -->
+  <div id="back_to_top_block" class="back_to_top_block is_hidden">
+    <a v-on:click="back_to_top_button_on_click">
+      <div class="arrow_shape">
+        <div class="arrow_head"></div>
+        <div class="arrow_body"></div>
+      </div>
+    </a>
+  </div>
+  <!-- back_to_top -->
+
+  <div id="post_id" style="display: none;">18</div>
+  <!-- main_inner -->
+</main>
+<!-- main -->
+
+<!-- back_to_top -->
+
+<!-- footer -->
+<footer>
+  <!-- footer_inner -->
+  <span>This blog is powered by my own project <a href="https://github.com/AoiKuiyuyou/AoikSeldomStaticSite">AoikSeldomStaticSite</a>.</span>
+  <!-- footer_inner -->
+</footer>
+<!-- footer -->
+
+<!-- bottom_scripts -->
+
+<script type="text/javascript" src="/blog/libs_outer/jquery/3.3.1/jquery.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/vue/2.5.16/vue.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/toastr/2.1.3/toastr.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/highlight/9.12.0/highlight.min.js"></script>
+<script type="text/javascript" src="/blog/libs_inner/base/post.js"></script>
+<!-- bottom_scripts -->
+
+</div>
+<!-- vue_app -->
+
+</body>
+</html>

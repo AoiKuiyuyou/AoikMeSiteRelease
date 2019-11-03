@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- head -->
+<head>
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-117972998-1"></script>
+  <script>
+    var hostname = window.location.hostname;
+    if (hostname && hostname !== '127.0.0.1' && hostname !== 'localhost' && hostname !== 'aoik.me.local') {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-117972998-1');
+    }
+  </script>
+  <!-- Google Analytics -->
+
+  <!-- head_meta -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <!-- head_meta -->
+
+  <!-- head_title -->
+  <title>C how variable length array is implemented</title>
+  <!-- head_title -->
+
+  <!-- head_links -->
+  <link rel="stylesheet" href="/blog/libs_outer/bootstrap/4.0.0/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/blog/libs_outer/github-markdown-css/2.10.0/github-markdown.css">
+  <link rel="stylesheet" href="/blog/libs_inner/base/base.css">
+  <!-- head_links -->
+
+  <!-- head_links2 -->
+
+<link rel="stylesheet" href="/blog/libs_outer/toastr/2.1.3/toastr.min.css">
+<link rel="stylesheet" href="/blog/libs_outer/highlight/9.12.0/highlight.min.css">
+  <!-- head_links2 -->
+
+  <!-- head_styles -->
+  <!-- head_styles -->
+</head>
+<!-- head -->
+
+<body>
+<div id="vue_app">
+
+<!-- header -->
+<header>
+  <!-- header_inner -->
+  <!-- logo -->
+  <a class="logo_block" href="/blog"><span class="logo_text">Aoik</span></a>
+  <!-- nav -->
+  <nav class="nav_block">
+    <div class="nav_table">
+      <a class="current" href="/blog/posts"><span>Posts</span></a>
+      <a class="" href="/blog/reposts"><span>Reposts</span></a>
+      <a class="" href="/blog/tags"><span>Tags</span></a>
+      <a target="_blank" href="https://github.com/AoiKuiyuyou/Aoik/blob/master/README.md"><span>Github</span></a>
+      <a target="_blank" href="http://aoikuiyuyou.github.io/me.html"><span>Resume</span></a>
+    </div>
+  </nav>
+  <!-- header_inner -->
+</header>
+<!-- header -->
+
+<!-- main -->
+<main>
+  <!-- main_inner -->
+  
+  <!-- breadcrumbs -->
+  <div class="breadcrumbs_block">
+    <a href="/blog">Home</a>
+    <span class="sep">&gt;</span>
+    <a href="/blog/posts">Posts</a>
+    <span class="sep">&gt;</span>
+    <a href="">This</a>
+  </div>
+  <!-- breadcrumbs -->
+
+
+
+  <!-- post_info -->
+  <div class="post_info_block">
+    <div class="tags_block">
+    <a class="tag" href="/blog/tags/c">c</a>
+    <a class="tag" href="/blog/tags/gcc">gcc</a>
+    <a class="tag" href="/blog/tags/variable-length-array">variable-length-array</a>
+    </div>
+    <div class="fields_block">
+      <span class="author">Aoik,</span>
+      <span class="create_time">2018.09.19</span>
+    </div>
+  </div>
+  <!-- post_info -->
+
+  <!-- post_content -->
+  <!-- `v-pre` aims to skip Vue parsing -->
+  <article v-pre class="post_content_block markdown-body">
+  <h1 id="c-how-variable-length-array-is-implemented">C how variable length array is implemented</h1><p>In C language, a variable length array (VLA) is an array whose length is not a
+constant expression. For example:</p>
+<pre><code>int a = 0xAA;
+int items[a];</code></pre><p>In this case, the array <code>items</code>&#39; length is a variable.</p>
+<p><a href="https://gcc.gnu.org/onlinedocs/gcc/Variable-Length.html">GCC has support for VLA</a>.
+To see how VLA is implemented, we can compile a C program that has used VLA and
+examine the result assembly code.</p>
+<p>The test environment is:</p>
+<ul>
+<li>CentOS 7.4</li>
+<li>Linux kernel 3.10.0-862.el7.x86_64</li>
+<li>GCC 4.8.5</li>
+</ul>
+<p>First of all, create a C source code file <code>vla_demo.c</code>:</p>
+<pre><code>void f() {
+    int a = 0xAA;
+    int items[a];
+    int b = 0xBB;
+    items[1] = 0xFF;
+}
+
+int main()
+{
+    f();
+}</code></pre><p>Then compile it to binary program:</p>
+<pre><code>gcc -O0 vla_demo.c -o vla_demo</code></pre><p>Then get the assembly code from the binary program:</p>
+<pre><code>objdump -d vla_demo</code></pre><p>Below is the assembly code of the function <code>f</code>:</p>
+<pre><code># 5DJX6: Push the caller&#39;s base address to stack.
+push   %rbp
+
+# Use the stack top address as the new base address.
+mov    %rsp,%rbp
+
+# Reserve space for all regular variables,
+# plus the VLA max index variable (`-0x10(%rbp)` in this case),
+# plus the VLA start address variable (`-0x18(%rbp)` in this case).
+sub    $0x20,%rsp
+
+# Move stack top address to rax.
+mov    %rsp,%rax
+
+# 3ZTLA: Move stack top address in rax to r8.
+# Aim to be restored at 6MSRF.
+mov    %rax,%r8
+
+# Move the array length `0xaa` to variable `a`.
+movl   $0xaa,-0x4(%rbp)
+
+# Move the array length in variable `a` to eax.
+# Variable `a` is an int so only 32-bit `eax` is used.
+mov    -0x4(%rbp),%eax
+
+# Move the array length in eax to r9
+movslq %eax,%r9
+
+# Subtract the array length in r9 by 1.
+# Now r9 holds the VLA max index.
+sub    $0x1,%r9
+
+# Move the VLA max index to the VLA max index variable.
+# The VLA max index variable is located at the first address after the
+# variables defined before the VLA statement, that can hold 8 bytes and is
+# 8-byte aligned.
+mov    %r9,-0x10(%rbp)
+
+# Move the array length in eax to r9
+movslq %eax,%r9
+
+# Move the array length in r9 to rsi
+mov    %r9,%rsi
+
+# Move 0 to edi
+mov    $0x0,%edi
+
+# Move the array length in eax to rsi
+movslq %eax,%rsi
+
+# Move the array length in rsi to rdx
+mov    %rsi,%rdx
+
+# Move 0 to ecx
+mov    $0x0,%ecx
+
+# Sign-extends eax to rax. The array length should be a positive value so the
+# higher 32 bits of rax should be 0.
+cltq
+
+# Left-shift the array length in rax by 2 bits, equivalently multiplying it by
+# 4. This converts the array length (number of ints) to array space size
+# (number of bytes).
+shl    $0x2,%rax
+
+# Move the number of bytes `0x3(%rax)` to rdx.
+# The extra 3 bytes aim to round up the value below.
+lea    0x3(%rax),%rdx
+
+# Move 16 to eax
+mov    $0x10,%eax
+
+# Subtract rax by 1. Now rax holds 15.
+sub    $0x1,%rax
+
+# Add the number of bytes `0x3(%rax)` in rdx to 15.
+# This aims to round up the value below.
+add    %rdx,%rax
+
+# Move 16 to ecx.
+mov    $0x10,%ecx
+
+# Move 0 to edx.
+mov    $0x0,%edx
+
+# Divide the number of bytes `0x3(%rax) + 15` in rdx:rax by 16 in rcx, store
+# quotient in rax, remainder in rdx.
+# Now rax holds the number of 16-byte blocks required.
+div    %rcx
+
+# Multiply the number of 16-byte blocks in rax by 16.
+# Now rax holds the 16-byte aligned number of bytes required.
+imul   $0x10,%rax,%rax
+
+# Subtract stack top address by the 16-byte aligned number of bytes in rax.
+# This reserves space for the VLA.
+sub    %rax,%rsp
+
+# Move stack top address to rax.
+mov    %rsp,%rax
+
+# Round up the stack top address in rax to be 4-byte aligned.
+# Now rax holds the VLA start address.
+add    $0x3,%rax
+shr    $0x2,%rax
+shl    $0x2,%rax
+
+# Move the VLA start address in rax to the VLA start address variable.
+mov    %rax,-0x18(%rbp)
+
+# Move value `0xbb` to variable `b`.
+movl   $0xbb,-0x1c(%rbp)
+
+# Move the VLA start address to rax.
+mov    -0x18(%rbp),%rax
+
+# Move value `0xff` to `items[1]`.
+movl   $0xff,0x4(%rax)
+
+# 6MSRF: Restore stack top address in r8 (stored at 3ZTLA).
+mov    %r8,%rsp
+
+# Move RBP to RSP so that the stack top is the caller&#39;s RBP pushed at 5DJX6.
+# Pop stack top value into RBP to restore the caller&#39;s RBP.
+leaveq
+
+# Return to the caller.
+retq</code></pre><p>What happens is that the number of bytes of an VLA is computed at run time and
+the stack top pointer is modified to reserve space for the VLA. There is a
+variable holding the start address of the VLA. The VLA&#39;s elements are addressed
+via this variable.</p>
+
+  </article>
+  <!-- post_content -->
+
+  <div class="prev_next_posts_block">
+    <div>
+      <span class="prev_post_prompt">Previous Post: </span><a class="prev_post_link" href="/blog/posts/aoikwinwhich-which-program-implemented-in-various-languages">AoikWinWhich - which program implemented in various languages</a><span class="prev_post_date">(2018.04.22)</span>
+    </div>
+    <div>
+      <span class="next_post_prompt">Next Post: </span><a class="next_post_link" href="/blog/posts/python-convert-between-timestamp-struct-time-datetime-and-str">Python convert between timestamp, struct_time, datetime and str</a><span class="next_post_date">(2018.11.10)</span>
+    </div>
+  </div>
+
+  <!-- Special syntax below is for Vue rendering on the client side -->
+  <div v-cloak id="post_comments_block" class="post_comments_block">
+    <p class="title">Comments:</p>
+    <div class="write_comment_block">
+      <div class="comment_info_block">
+        <input v-model="commenter_name" class="commenter_name" placeholder="Your name"></input>
+        <div class="replyto_block">
+          <span>Reply to:</span>
+          <select v-model="replyto_comment_id">
+             <!-- `0` is a special value meaning no replyto -->
+             <option disabled value="0"></option>
+             <option v-for="comment_id in comment_ids" :value="comment_id">{{comment_id}}</option>
+          </select>
+        </div>
+      </div>
+      <textarea v-model="comment_content" class="comment_content" placeholder="Comment"></textarea>
+      <div><input v-on:click="comment_submit_button_on_click" class="submit_button" type="button" value="Submit"></input></div>
+    </div>
+    <ul>
+        <li v-for="comment_info in comment_infos" v-bind:class="comment_info.is_admin ? 'is_admin' : ''">
+            <a v-bind:id="'comment-' + comment_info.comment_id"
+              v-bind:href="'#comment-' + comment_info.comment_id" class="comment_id">{{comment_info.comment_id}}</a>
+            <div class="comment_content">{{comment_info.comment_content}}</div>
+            <div class="comment_info">
+              <span class="commenter_name">{{comment_info.commenter_name}}</span>
+              <span class="create_time">{{comment_info.create_time}}</span>
+              <template v-if="comment_info.replyto_comment_id > 0">
+              <span>to <a v-bind:href="'#comment-' + comment_info.replyto_comment_id">comment-{{comment_info.replyto_comment_id}}</a></span>
+              </template>
+              <a v-bind:data-comment-id="comment_info.comment_id" v-on:click="comment_reply_button_on_click" class="reply_button" href="#post_comments_block">Reply to this</a>
+            </div>
+        </li>
+    </ul>
+  </div>
+  
+
+  <!-- post_toc -->
+  <div id="post_toc_block" class="post_toc_block is_hidden">
+    <a v-on:click="post_toc_hide_link_on_click" data-shown-text="Hide" data-hidden-text="TOC" class="hide_link" href="javascript:void(0)">TOC</a>
+    <span class="title">Contents</span>
+  </div>
+  <!-- post_toc -->
+
+  <!-- back_to_top -->
+  <div id="back_to_top_block" class="back_to_top_block is_hidden">
+    <a v-on:click="back_to_top_button_on_click">
+      <div class="arrow_shape">
+        <div class="arrow_head"></div>
+        <div class="arrow_body"></div>
+      </div>
+    </a>
+  </div>
+  <!-- back_to_top -->
+
+  <div id="post_id" style="display: none;">2</div>
+  <!-- main_inner -->
+</main>
+<!-- main -->
+
+<!-- back_to_top -->
+
+<!-- footer -->
+<footer>
+  <!-- footer_inner -->
+  <span>This blog is powered by my own project <a href="https://github.com/AoiKuiyuyou/AoikSeldomStaticSite">AoikSeldomStaticSite</a>.</span>
+  <!-- footer_inner -->
+</footer>
+<!-- footer -->
+
+<!-- bottom_scripts -->
+
+<script type="text/javascript" src="/blog/libs_outer/jquery/3.3.1/jquery.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/vue/2.5.16/vue.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/toastr/2.1.3/toastr.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/highlight/9.12.0/highlight.min.js"></script>
+<script type="text/javascript" src="/blog/libs_inner/base/post.js"></script>
+<!-- bottom_scripts -->
+
+</div>
+<!-- vue_app -->
+
+</body>
+</html>

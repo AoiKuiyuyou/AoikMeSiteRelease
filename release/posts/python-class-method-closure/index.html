@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- head -->
+<head>
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-117972998-1"></script>
+  <script>
+    var hostname = window.location.hostname;
+    if (hostname && hostname !== '127.0.0.1' && hostname !== 'localhost' && hostname !== 'aoik.me.local') {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-117972998-1');
+    }
+  </script>
+  <!-- Google Analytics -->
+
+  <!-- head_meta -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <!-- head_meta -->
+
+  <!-- head_title -->
+  <title>Python class method closure</title>
+  <!-- head_title -->
+
+  <!-- head_links -->
+  <link rel="stylesheet" href="/blog/libs_outer/bootstrap/4.0.0/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/blog/libs_outer/github-markdown-css/2.10.0/github-markdown.css">
+  <link rel="stylesheet" href="/blog/libs_inner/base/base.css">
+  <!-- head_links -->
+
+  <!-- head_links2 -->
+
+<link rel="stylesheet" href="/blog/libs_outer/toastr/2.1.3/toastr.min.css">
+<link rel="stylesheet" href="/blog/libs_outer/highlight/9.12.0/highlight.min.css">
+  <!-- head_links2 -->
+
+  <!-- head_styles -->
+  <!-- head_styles -->
+</head>
+<!-- head -->
+
+<body>
+<div id="vue_app">
+
+<!-- header -->
+<header>
+  <!-- header_inner -->
+  <!-- logo -->
+  <a class="logo_block" href="/blog"><span class="logo_text">Aoik</span></a>
+  <!-- nav -->
+  <nav class="nav_block">
+    <div class="nav_table">
+      <a class="current" href="/blog/posts"><span>Posts</span></a>
+      <a class="" href="/blog/reposts"><span>Reposts</span></a>
+      <a class="" href="/blog/tags"><span>Tags</span></a>
+      <a target="_blank" href="https://github.com/AoiKuiyuyou/Aoik/blob/master/README.md"><span>Github</span></a>
+      <a target="_blank" href="http://aoikuiyuyou.github.io/me.html"><span>Resume</span></a>
+    </div>
+  </nav>
+  <!-- header_inner -->
+</header>
+<!-- header -->
+
+<!-- main -->
+<main>
+  <!-- main_inner -->
+  
+  <!-- breadcrumbs -->
+  <div class="breadcrumbs_block">
+    <a href="/blog">Home</a>
+    <span class="sep">&gt;</span>
+    <a href="/blog/posts">Posts</a>
+    <span class="sep">&gt;</span>
+    <a href="">This</a>
+  </div>
+  <!-- breadcrumbs -->
+
+
+
+  <!-- post_info -->
+  <div class="post_info_block">
+    <div class="tags_block">
+    <a class="tag" href="/blog/tags/python">python</a>
+    <a class="tag" href="/blog/tags/closure">closure</a>
+    </div>
+    <div class="fields_block">
+      <span class="author">Aoik,</span>
+      <span class="create_time">2019.10.29</span>
+    </div>
+  </div>
+  <!-- post_info -->
+
+  <!-- post_content -->
+  <!-- `v-pre` aims to skip Vue parsing -->
+  <article v-pre class="post_content_block markdown-body">
+  <h1 id="python-class-method-closure">Python class method closure</h1><p>Python&#39;s class methods are functions nested in the class&#39;s block. Internally,
+a class block is very similar to a function block, with the exception that nested
+functions in it, i.e. the class methods, do not support accessing class
+attributes as closure variables.
+For example,</p>
+<pre><code>def f():
+    v = 100
+    def g():
+        return v
+    g()</code></pre><p>works but</p>
+<pre><code>class f(object):
+    v = 100
+    def g():
+        return v
+    g()</code></pre><p>fails with <code>NameError</code> for <code>v</code> because it is assumed to be a global variable.</p>
+<p>Why the class attribute name <code>v</code> is out there but the class method <code>g</code> can not see it?</p>
+<p>This is a design decision of Python and it is implemented at <a href="https://github.com/python/cpython/blob/v3.8.0/Python/symtable.c#L807">here</a>, where names visible in current block are made visible to child blocks only if the current block is not a class block. So if it is a class block, class methods, i.e. child blocks, really can not see the class attribute name <code>v</code>, as a result <code>v</code> in the class method <code>g</code> is assumed to be a global variable instead.</p>
+<p>We can hack Python&#39;s source code to implement class method closure. Several places need to be patched.</p>
+<p>At <a href="https://github.com/python/cpython/blob/v3.8.0/Python/symtable.c#L807">here</a>, change</p>
+<pre><code>if (ste-&gt;ste_type != ClassBlock) {</code></pre><p>to</p>
+<pre><code>if (TRUE) {</code></pre><p><br>At <a href="https://github.com/python/cpython/blob/v3.8.0/Python/symtable.c#L809">here</a>, change</p>
+<pre><code>if (ste-&gt;ste_type == FunctionBlock) {</code></pre><p>to</p>
+<pre><code>if (ste-&gt;ste_type == FunctionBlock || ste-&gt;ste_type == ClassBlock) {</code></pre><p><br>At <a href="https://github.com/python/cpython/blob/v3.8.0/Python/symtable.c#L828">here</a>, change</p>
+<pre><code>else {</code></pre><p>to</p>
+<pre><code>if (ste-&gt;ste_type == ClassBlock) {</code></pre><p><br>At <a href="https://github.com/python/cpython/blob/v3.8.0/Python/symtable.c#L864">here</a>, change</p>
+<pre><code>if (ste-&gt;ste_type == FunctionBlock &amp;&amp; !analyze_cells(scopes, newfree))</code></pre><p>to</p>
+<pre><code>if ((ste-&gt;ste_type == FunctionBlock || ste-&gt;ste_type == ClassBlock) &amp;&amp; !analyze_cells(scopes, newfree))</code></pre><p><br>At <a href="https://github.com/python/cpython/blob/v3.8.0/Python/symtable.c#L866">here</a>, change</p>
+<pre><code>else if (ste-&gt;ste_type == ClassBlock &amp;&amp; !drop_class_free(ste, newfree))</code></pre><p>to</p>
+<pre><code>if (ste-&gt;ste_type == ClassBlock &amp;&amp; !drop_class_free(ste, newfree))</code></pre><p><br>At <a href="https://github.com/python/cpython/blob/v3.8.0/Python/compile.c#L2317">here</a>, change</p>
+<pre><code>assert(PyDict_GET_SIZE(c-&gt;u-&gt;u_cellvars) == 0);</code></pre><p>to</p>
+<pre><code>//assert(PyDict_GET_SIZE(c-&gt;u-&gt;u_cellvars) == 0);</code></pre><p><br>Now the code below works:</p>
+<pre><code>class Test(object):
+
+    CLASS_FIELD = 100
+
+    def get_class_field(self):
+        return CLASS_FIELD
+
+    def set_class_field(self, value):
+        nonlocal CLASS_FIELD
+        CLASS_FIELD = value
+
+
+test = Test()
+
+assert test.get_class_field() == 100
+
+test.set_class_field(200)
+assert test.get_class_field() == 200</code></pre><p><br>Notice a subtlety here that with class attributes accessed as closure variables in class methods, change of a class attribute&#39;s value via attribute assignment will not be perceived by the class methods because they are bound to access the closure variable, instead of doing an attribute lookup on the class object to get the new value. For example:</p>
+<pre><code>class Test(object):
+
+    CLASS_FIELD = 100
+
+    def get_class_field(self):
+        return CLASS_FIELD
+
+    def set_class_field(self, value):
+        nonlocal CLASS_FIELD
+        CLASS_FIELD = value
+
+
+test = Test()
+
+Test.CLASS_FIELD = 200
+assert test.get_class_field() == 100
+
+test.set_class_field(300)
+assert test.get_class_field() == 300
+assert Test.CLASS_FIELD == 200</code></pre>
+  </article>
+  <!-- post_content -->
+
+  <div class="prev_next_posts_block">
+    <div>
+      <span class="prev_post_prompt">Previous Post: </span><a class="prev_post_link" href="/blog/posts/python-compiler-from-cst-to-ast">Python's compiler - from CST to AST</a><span class="prev_post_date">(2019.10.28)</span>
+    </div>
+    <div>
+      <span class="next_post_prompt">First Post: </span><a class="next_post_link" href="/blog/posts/aoikwinwhich-which-program-implemented-in-various-languages">AoikWinWhich - which program implemented in various languages</a><span class="next_post_date">(2018.04.22)</span>
+    </div>
+  </div>
+
+  <!-- Special syntax below is for Vue rendering on the client side -->
+  <div v-cloak id="post_comments_block" class="post_comments_block">
+    <p class="title">Comments:</p>
+    <div class="write_comment_block">
+      <div class="comment_info_block">
+        <input v-model="commenter_name" class="commenter_name" placeholder="Your name"></input>
+        <div class="replyto_block">
+          <span>Reply to:</span>
+          <select v-model="replyto_comment_id">
+             <!-- `0` is a special value meaning no replyto -->
+             <option disabled value="0"></option>
+             <option v-for="comment_id in comment_ids" :value="comment_id">{{comment_id}}</option>
+          </select>
+        </div>
+      </div>
+      <textarea v-model="comment_content" class="comment_content" placeholder="Comment"></textarea>
+      <div><input v-on:click="comment_submit_button_on_click" class="submit_button" type="button" value="Submit"></input></div>
+    </div>
+    <ul>
+        <li v-for="comment_info in comment_infos" v-bind:class="comment_info.is_admin ? 'is_admin' : ''">
+            <a v-bind:id="'comment-' + comment_info.comment_id"
+              v-bind:href="'#comment-' + comment_info.comment_id" class="comment_id">{{comment_info.comment_id}}</a>
+            <div class="comment_content">{{comment_info.comment_content}}</div>
+            <div class="comment_info">
+              <span class="commenter_name">{{comment_info.commenter_name}}</span>
+              <span class="create_time">{{comment_info.create_time}}</span>
+              <template v-if="comment_info.replyto_comment_id > 0">
+              <span>to <a v-bind:href="'#comment-' + comment_info.replyto_comment_id">comment-{{comment_info.replyto_comment_id}}</a></span>
+              </template>
+              <a v-bind:data-comment-id="comment_info.comment_id" v-on:click="comment_reply_button_on_click" class="reply_button" href="#post_comments_block">Reply to this</a>
+            </div>
+        </li>
+    </ul>
+  </div>
+  
+
+  <!-- post_toc -->
+  <div id="post_toc_block" class="post_toc_block is_hidden">
+    <a v-on:click="post_toc_hide_link_on_click" data-shown-text="Hide" data-hidden-text="TOC" class="hide_link" href="javascript:void(0)">TOC</a>
+    <span class="title">Contents</span>
+  </div>
+  <!-- post_toc -->
+
+  <!-- back_to_top -->
+  <div id="back_to_top_block" class="back_to_top_block is_hidden">
+    <a v-on:click="back_to_top_button_on_click">
+      <div class="arrow_shape">
+        <div class="arrow_head"></div>
+        <div class="arrow_body"></div>
+      </div>
+    </a>
+  </div>
+  <!-- back_to_top -->
+
+  <div id="post_id" style="display: none;">50</div>
+  <!-- main_inner -->
+</main>
+<!-- main -->
+
+<!-- back_to_top -->
+
+<!-- footer -->
+<footer>
+  <!-- footer_inner -->
+  <span>This blog is powered by my own project <a href="https://github.com/AoiKuiyuyou/AoikSeldomStaticSite">AoikSeldomStaticSite</a>.</span>
+  <!-- footer_inner -->
+</footer>
+<!-- footer -->
+
+<!-- bottom_scripts -->
+
+<script type="text/javascript" src="/blog/libs_outer/jquery/3.3.1/jquery.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/vue/2.5.16/vue.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/toastr/2.1.3/toastr.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/highlight/9.12.0/highlight.min.js"></script>
+<script type="text/javascript" src="/blog/libs_inner/base/post.js"></script>
+<!-- bottom_scripts -->
+
+</div>
+<!-- vue_app -->
+
+</body>
+</html>

@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- head -->
+<head>
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-117972998-1"></script>
+  <script>
+    var hostname = window.location.hostname;
+    if (hostname && hostname !== '127.0.0.1' && hostname !== 'localhost' && hostname !== 'aoik.me.local') {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-117972998-1');
+    }
+  </script>
+  <!-- Google Analytics -->
+
+  <!-- head_meta -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <!-- head_meta -->
+
+  <!-- head_title -->
+  <title>FreeDOS source code study - fdisk compile source code</title>
+  <!-- head_title -->
+
+  <!-- head_links -->
+  <link rel="stylesheet" href="/blog/libs_outer/bootstrap/4.0.0/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/blog/libs_outer/github-markdown-css/2.10.0/github-markdown.css">
+  <link rel="stylesheet" href="/blog/libs_inner/base/base.css">
+  <!-- head_links -->
+
+  <!-- head_links2 -->
+
+<link rel="stylesheet" href="/blog/libs_outer/toastr/2.1.3/toastr.min.css">
+<link rel="stylesheet" href="/blog/libs_outer/highlight/9.12.0/highlight.min.css">
+  <!-- head_links2 -->
+
+  <!-- head_styles -->
+  <!-- head_styles -->
+</head>
+<!-- head -->
+
+<body>
+<div id="vue_app">
+
+<!-- header -->
+<header>
+  <!-- header_inner -->
+  <!-- logo -->
+  <a class="logo_block" href="/blog"><span class="logo_text">Aoik</span></a>
+  <!-- nav -->
+  <nav class="nav_block">
+    <div class="nav_table">
+      <a class="current" href="/blog/posts"><span>Posts</span></a>
+      <a class="" href="/blog/reposts"><span>Reposts</span></a>
+      <a class="" href="/blog/tags"><span>Tags</span></a>
+      <a target="_blank" href="https://github.com/AoiKuiyuyou/Aoik/blob/master/README.md"><span>Github</span></a>
+      <a target="_blank" href="http://aoikuiyuyou.github.io/me.html"><span>Resume</span></a>
+    </div>
+  </nav>
+  <!-- header_inner -->
+</header>
+<!-- header -->
+
+<!-- main -->
+<main>
+  <!-- main_inner -->
+  
+  <!-- breadcrumbs -->
+  <div class="breadcrumbs_block">
+    <a href="/blog">Home</a>
+    <span class="sep">&gt;</span>
+    <a href="/blog/posts">Posts</a>
+    <span class="sep">&gt;</span>
+    <a href="">This</a>
+  </div>
+  <!-- breadcrumbs -->
+
+
+
+  <!-- post_info -->
+  <div class="post_info_block">
+    <div class="tags_block">
+    <a class="tag" href="/blog/tags/freedos-source-code-study">freedos-source-code-study</a>
+    <a class="tag" href="/blog/tags/fdisk">fdisk</a>
+    <a class="tag" href="/blog/tags/吸星大法强吃源码">吸星大法强吃源码</a>
+    </div>
+    <div class="fields_block">
+      <span class="author">Aoik,</span>
+      <span class="create_time">2019.08.15</span>
+    </div>
+  </div>
+  <!-- post_info -->
+
+  <!-- post_content -->
+  <!-- `v-pre` aims to skip Vue parsing -->
+  <article v-pre class="post_content_block markdown-body">
+  <h1 id="freedos-source-code-study-fdisk-compile-source-code">FreeDOS source code study - fdisk compile source code</h1><h2 id="prepare-operating-system"><a class="anchor" href="#prepare-operating-system"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Prepare operating system</h2><p>The OS can be Windows 98 or Windows XP.</p>
+<h2 id="install-nasm"><a class="anchor" href="#install-nasm"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Install NASM</h2><p>Download NASM from <a href="https://sourceforge.net/projects/nasm/files/DOS%2016-bit%20binaries%20%28OBSOLETE%29/0.98.39/nsm09839.zip/download">here</a>.</p>
+<p>Decompress the archive to <code>C:\fdisk_build\nasm</code>.</p>
+<p>Make sure <code>C:\fdisk_build\nasm\nasm.exe</code> is there.</p>
+<h2 id="install-turbo-c-"><a class="anchor" href="#install-turbo-c-"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Install Turbo C++</h2><p>Download Turbo C++ from <a href="https://winworldpc.com/download/461329c3-9a18-c39a-11c3-a4e284a2c3a5">here</a>.</p>
+<p>Decompress the archive to <code>C:\fdisk_build\turbocpp_images</code>.</p>
+<p>The directory contains five floppy image files:</p>
+<ul>
+<li>Disk01.img</li>
+<li>Disk02.img</li>
+<li>Disk03.img</li>
+<li>Disk04.img</li>
+<li>Disk05.img</li>
+</ul>
+<p>Download Virtual Floppy Drive from <a href="https://sourceforge.net/projects/vfd/files/2.1%20%28February%2006%2C%202008%29/vfd21-080206.zip/download">here</a>.</p>
+<p>Decompress the archive to <code>C:\fdisk_build\vfd</code>.</p>
+<p>Run <code>C:\fdisk_build\vfd\vfdwin.exe</code>.</p>
+<p>In tab <code>Driver</code>, click <code>Install</code> and <code>Start</code>.</p>
+<p>In tab <code>Drive0</code>, click <code>Change</code> to add drive <code>A:</code>.</p>
+<p>Click <code>Open/Create...</code> to mount image file <code>C:\fdisk_build\turbocpp_images\Disk01.img</code>.</p>
+<p>Click <code>A:\INSTALL.EXE</code> to start Turbo C++ installation.</p>
+<p>During the installation, use Virtual Floppy Drive to switch the floppy image according to the prompt.</p>
+<p>Install Turbo C++ to <code>C:\fdisk_build\turbocpp</code>.</p>
+<p>Make sure <code>C:\fdisk_build\turbocpp\bin\tcc.exe</code> is there.</p>
+<h2 id="prepare-fdisk-source-code"><a class="anchor" href="#prepare-fdisk-source-code"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Prepare fdisk source code</h2><p>Download fdisk source code from <a href="https://github.com/FDOS/fdisk/tree/769d52be0ac37d0cd1b1e140609b97ad8eeec592">here</a>.</p>
+<p>Decompress the archive to <code>C:\fdisk_build\fdisk</code>.</p>
+<p><br>Copy <code>C:\fdisk_build\fdisk\SOURCE\BOOTEASY\BOOTEASY.ASM</code> to <code>C:\fdisk_build\fdisk\SOURCE\FDISK\BOOTEASY.ASM</code>.</p>
+<p>Copy <code>C:\fdisk_build\fdisk\SOURCE\BOOTNORM\BOOTNORM.ASM</code> to <code>C:\fdisk_build\fdisk\SOURCE\FDISK\BOOTNORM.ASM</code>.</p>
+<p><br>Decompress <code>C:\fdisk_build\fdisk\SOURCE\CATS396S.ZIP</code> to <code>C:\fdisk_build\fdisk\SOURCE\CATS396S</code>.</p>
+<p>I tried building <code>CATS</code> into <code>catdb.lib</code> using Turbo C 2.01, then link with it
+when building fdisk. The linking failed for unknown reason. So instead we build
+CATS directly with fdisk.</p>
+<p>Copy <code>CATGETS.C</code>, <code>DB.C</code>, and <code>GET_LINE.C</code> from <code>C:\fdisk_build\fdisk\SOURCE\CATS396S\CATS39\LIB</code> to <code>C:\fdisk_build\fdisk\SOURCE\FDISK</code>.</p>
+<p><br>Apply the following changes to <code>C:\fdisk_build\fdisk\SOURCE\FDISK\GET_LINE.C</code>.</p>
+<p>Change line 44</p>
+<pre><code>str = malloc (sizeof (char) * str_size);</code></pre><p>to</p>
+<pre><code>str = (char*) malloc (sizeof (char) * str_size);</code></pre><p>Change line 64</p>
+<pre><code>tmp_str = realloc (str, sizeof (char) * str_size);</code></pre><p>to</p>
+<pre><code>tmp_str = (char*) realloc (str, sizeof (char) * str_size);</code></pre><p><br>Apply the following changes to <code>C:\fdisk_build\fdisk\SOURCE\FDISK\MAKEFILE</code>.</p>
+<p>Change</p>
+<pre><code>OBJ = main.obj bootnormal.obj booteasy.obj cmd.obj fdiskio.obj \
+      helpscr.obj kbdinput.obj pdiskio.obj pcompute.obj \
+      userint1.obj userint2.obj</code></pre><p>to</p>
+<pre><code>OBJ1 = main.obj bootnormal.obj booteasy.obj cmd.obj fdiskio.obj
+OBJ2 = helpscr.obj kbdinput.obj pdiskio.obj pcompute.obj
+OBJ3 = userint1.obj userint2.obj db.obj catgets.obj get_line.obj
+OBJ = $(OBJ1) $(OBJ2) $(OBJ3)</code></pre><p>Change</p>
+<pre><code>ui2.obj: userint2.c
+ $(CC) $(CFLAGS) -c userint2.cc</code></pre><p>to</p>
+<pre><code>ui2.obj: userint2.c
+ $(CC) $(CFLAGS) -c userint2.c
+
+db.obj: db.c
+ $(CC) $(CFLAGS) -c db.c 
+
+catgets.obj: catgets.c 
+ $(CC) $(CFLAGS) -c catgets.c
+
+get_line.obj: get_line.c
+ $(CC) $(CFLAGS) -c get_line.c</code></pre><h3 id="build-echoto"><a class="anchor" href="#build-echoto"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Build echoto</h3><p>The command that builds <code>fdisk.exe</code> will fail with &quot;Arguments list too long&quot;
+error. The workaround is to put its arguments in a temp file. To create the
+temp file, we need an <code>echoto</code> program.</p>
+<p>Create <code>C:\fdisk_build\echoto\echoto.c</code>:</p>
+<pre><code>#include &lt;stdio.h&gt;
+
+int main(int argc, char *argv[])
+{
+    FILE *file;
+    char* fileName;
+    int i;
+
+    if (argc &lt;= 1)
+    {
+        return 0;
+    }
+
+    fileName = argv[1];
+
+    file = fopen(fileName, &quot;a&quot;);
+
+    if (file == NULL) {
+        return 1;
+    }
+
+    for (i = 2; i &lt; argc; i++)
+    {
+        fprintf(file, &quot;%s &quot;, argv[i]);
+    }
+
+    fclose(file);
+
+    return 0;
+}</code></pre><p>In the command console, run</p>
+<pre><code>cd C:\fdisk_build\echoto
+
+SET PATH=%PATH%;C:\fdisk_build\turbocpp\bin
+
+tcc -IC:\fdisk_build\turbocpp\INCLUDE -LC:\fdisk_build\turbocpp\LIB echoto.c</code></pre><p>The result file is <code>C:\fdisk_build\echoto\echoto.exe</code>.</p>
+<p>Copy <code>C:\fdisk_build\echoto\echoto.exe</code> to <code>C:\fdisk_build\fdisk\SOURCE\FDISK\echoto.exe</code>.</p>
+<p>Edit <code>C:\fdisk_build\fdisk\SOURCE\FDISK\MAKEFILE</code>, change</p>
+<pre><code>fdisk.exe: main.obj $(OBJ)  
+ $(CC) $(LDFLAGS) -efdisk $(OBJ) $(LDLIBS)</code></pre><p>to</p>
+<pre><code>fdisk.exe: main.obj $(OBJ)
+ $(RM) objs_list.txt
+ echoto.exe objs_list.txt $(OBJ1)
+ echoto.exe objs_list.txt $(OBJ2)
+ echoto.exe objs_list.txt $(OBJ3)
+ $(CC) $(LDFLAGS) -efdisk $(LDLIBS) @objs_list.txt</code></pre><h3 id="build-fdisk"><a class="anchor" href="#build-fdisk"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Build fdisk</h3><p>In the command console, run</p>
+<pre><code>cd C:\fdisk_build\fdisk\SOURCE\FDISK
+
+C:\fdisk_build\nasm\nasm.exe -f obj bootnorm.asm
+
+C:\fdisk_build\nasm\nasm.exe -f obj booteasy.asm
+
+SET PATH=%PATH%;C:\fdisk_build\turbocpp\bin
+
+make all</code></pre><p>The result file is <code>C:\fdisk_build\fdisk\SOURCE\FDISK\fdisk.exe</code>.</p>
+
+  </article>
+  <!-- post_content -->
+
+  <div class="prev_next_posts_block">
+    <div>
+      <span class="prev_post_prompt">Previous Post: </span><a class="prev_post_link" href="/blog/posts/freedos-source-code-study-boot-sector">FreeDOS source code study - boot sector</a><span class="prev_post_date">(2019.08.04)</span>
+    </div>
+    <div>
+      <span class="next_post_prompt">Next Post: </span><a class="next_post_link" href="/blog/posts/freedos-source-code-study-fdisk-boot-sector">FreeDOS source code study - fdisk boot sector</a><span class="next_post_date">(2019.08.16)</span>
+    </div>
+  </div>
+
+  <!-- Special syntax below is for Vue rendering on the client side -->
+  <div v-cloak id="post_comments_block" class="post_comments_block">
+    <p class="title">Comments:</p>
+    <div class="write_comment_block">
+      <div class="comment_info_block">
+        <input v-model="commenter_name" class="commenter_name" placeholder="Your name"></input>
+        <div class="replyto_block">
+          <span>Reply to:</span>
+          <select v-model="replyto_comment_id">
+             <!-- `0` is a special value meaning no replyto -->
+             <option disabled value="0"></option>
+             <option v-for="comment_id in comment_ids" :value="comment_id">{{comment_id}}</option>
+          </select>
+        </div>
+      </div>
+      <textarea v-model="comment_content" class="comment_content" placeholder="Comment"></textarea>
+      <div><input v-on:click="comment_submit_button_on_click" class="submit_button" type="button" value="Submit"></input></div>
+    </div>
+    <ul>
+        <li v-for="comment_info in comment_infos" v-bind:class="comment_info.is_admin ? 'is_admin' : ''">
+            <a v-bind:id="'comment-' + comment_info.comment_id"
+              v-bind:href="'#comment-' + comment_info.comment_id" class="comment_id">{{comment_info.comment_id}}</a>
+            <div class="comment_content">{{comment_info.comment_content}}</div>
+            <div class="comment_info">
+              <span class="commenter_name">{{comment_info.commenter_name}}</span>
+              <span class="create_time">{{comment_info.create_time}}</span>
+              <template v-if="comment_info.replyto_comment_id > 0">
+              <span>to <a v-bind:href="'#comment-' + comment_info.replyto_comment_id">comment-{{comment_info.replyto_comment_id}}</a></span>
+              </template>
+              <a v-bind:data-comment-id="comment_info.comment_id" v-on:click="comment_reply_button_on_click" class="reply_button" href="#post_comments_block">Reply to this</a>
+            </div>
+        </li>
+    </ul>
+  </div>
+  
+
+  <!-- post_toc -->
+  <div id="post_toc_block" class="post_toc_block is_hidden">
+    <a v-on:click="post_toc_hide_link_on_click" data-shown-text="Hide" data-hidden-text="TOC" class="hide_link" href="javascript:void(0)">TOC</a>
+    <span class="title">Contents</span>
+  </div>
+  <!-- post_toc -->
+
+  <!-- back_to_top -->
+  <div id="back_to_top_block" class="back_to_top_block is_hidden">
+    <a v-on:click="back_to_top_button_on_click">
+      <div class="arrow_shape">
+        <div class="arrow_head"></div>
+        <div class="arrow_body"></div>
+      </div>
+    </a>
+  </div>
+  <!-- back_to_top -->
+
+  <div id="post_id" style="display: none;">35</div>
+  <!-- main_inner -->
+</main>
+<!-- main -->
+
+<!-- back_to_top -->
+
+<!-- footer -->
+<footer>
+  <!-- footer_inner -->
+  <span>This blog is powered by my own project <a href="https://github.com/AoiKuiyuyou/AoikSeldomStaticSite">AoikSeldomStaticSite</a>.</span>
+  <!-- footer_inner -->
+</footer>
+<!-- footer -->
+
+<!-- bottom_scripts -->
+
+<script type="text/javascript" src="/blog/libs_outer/jquery/3.3.1/jquery.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/vue/2.5.16/vue.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/toastr/2.1.3/toastr.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/highlight/9.12.0/highlight.min.js"></script>
+<script type="text/javascript" src="/blog/libs_inner/base/post.js"></script>
+<!-- bottom_scripts -->
+
+</div>
+<!-- vue_app -->
+
+</body>
+</html>
