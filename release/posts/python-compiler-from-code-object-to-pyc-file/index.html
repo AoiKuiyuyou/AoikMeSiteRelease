@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- head -->
+<head>
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-117972998-1"></script>
+  <script>
+    var hostname = window.location.hostname;
+    if (hostname && hostname !== '127.0.0.1' && hostname !== 'localhost' && hostname !== 'aoik.me.local') {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-117972998-1');
+    }
+  </script>
+  <!-- Google Analytics -->
+
+  <!-- head_meta -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <!-- head_meta -->
+
+  <!-- head_title -->
+  <title>Python's compiler - from code object to pyc file</title>
+  <!-- head_title -->
+
+  <!-- head_links -->
+  <link rel="stylesheet" href="/blog/libs_outer/bootstrap/4.0.0/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/blog/libs_outer/github-markdown-css/2.10.0/github-markdown.css">
+  <link rel="stylesheet" href="/blog/libs_inner/base/base.css">
+  <!-- head_links -->
+
+  <!-- head_links2 -->
+
+<link rel="stylesheet" href="/blog/libs_outer/toastr/2.1.3/toastr.min.css">
+<link rel="stylesheet" href="/blog/libs_outer/highlight/9.12.0/highlight.min.css">
+  <!-- head_links2 -->
+
+  <!-- head_styles -->
+  <!-- head_styles -->
+</head>
+<!-- head -->
+
+<body>
+<div id="vue_app">
+
+<!-- header -->
+<header>
+  <!-- header_inner -->
+  <!-- logo -->
+  <a class="logo_block" href="/blog"><span class="logo_text">Aoik</span></a>
+  <!-- nav -->
+  <nav class="nav_block">
+    <div class="nav_table">
+      <a class="current" href="/blog/posts"><span>Posts</span></a>
+      <a class="" href="/blog/reposts"><span>Reposts</span></a>
+      <a class="" href="/blog/tags"><span>Tags</span></a>
+      <a target="_blank" href="https://github.com/AoiKuiyuyou/Aoik/blob/master/README.md"><span>Github</span></a>
+      <a target="_blank" href="http://aoikuiyuyou.github.io/me.html"><span>Resume</span></a>
+    </div>
+  </nav>
+  <!-- header_inner -->
+</header>
+<!-- header -->
+
+<!-- main -->
+<main>
+  <!-- main_inner -->
+  
+  <!-- breadcrumbs -->
+  <div class="breadcrumbs_block">
+    <a href="/blog">Home</a>
+    <span class="sep">&gt;</span>
+    <a href="/blog/posts">Posts</a>
+    <span class="sep">&gt;</span>
+    <a href="">This</a>
+  </div>
+  <!-- breadcrumbs -->
+
+
+
+  <!-- post_info -->
+  <div class="post_info_block">
+    <div class="tags_block">
+    <a class="tag" href="/blog/tags/python">python</a>
+    <a class="tag" href="/blog/tags/compiler">compiler</a>
+    <a class="tag" href="/blog/tags/code-object">code-object</a>
+    <a class="tag" href="/blog/tags/pyc">pyc</a>
+    <a class="tag" href="/blog/tags/source-code-study">source-code-study</a>
+    <a class="tag" href="/blog/tags/吸星大法强吃源码">吸星大法强吃源码</a>
+    </div>
+    <div class="fields_block">
+      <span class="author">Aoik,</span>
+      <span class="create_time">2019.11.06</span>
+    </div>
+  </div>
+  <!-- post_info -->
+
+  <!-- post_content -->
+  <!-- `v-pre` aims to skip Vue parsing -->
+  <article v-pre class="post_content_block markdown-body">
+  <h1 id="python-39-s-compiler-from-code-object-to-pyc-file">Python&#39;s compiler - from code object to pyc file</h1><p><strong>Python&#39;s compiler series:</strong></p>
+<ul>
+<li><a href="/blog/posts/python-3.8.0-execution-flow">Python 3.8.0 execution flow</a></li>
+<li><a href="/blog/posts/python-compiler-from-grammar-to-dfa">Python&#39;s compiler - from grammar to DFA</a></li>
+<li><a href="/blog/posts/python-compiler-the-grammar-file-is-not-ll1-but-the-parser-is">Python&#39;s compiler - the grammar file is not LL(1) but the parser is</a></li>
+<li><a href="/blog/posts/python-compiler-from-tokens-to-cst">Python&#39;s compiler - from tokens to CST</a></li>
+<li><a href="/blog/posts/python-compiler-from-cst-to-ast">Python&#39;s compiler - from CST to AST</a></li>
+<li><a href="/blog/posts/python-compiler-from-ast-to-code-object">Python&#39;s compiler - from AST to code object</a></li>
+<li><a href="/blog/posts/python-compiler-from-code-object-to-pyc-file">Python&#39;s compiler - from code object to pyc file</a></li>
+</ul>
+<p><br>When importing a module for the first time, the module file&#39;s source code is
+compiled to code object. The code object is then marshaled to a <code>pyc</code> file to
+speed up the importing next time.</p>
+<p>To import a module, we can either use <code>import</code> statement, or use <code>builtins.__import__</code> or <code>importlib.__import__</code>.</p>
+<pre><code># ----- 7HQTL -----
+# Evaluate bytecode.
+ceval.c--_PyEval_EvalFrameDefault
+
+  switch on opcode
+  case TARGET(IMPORT_NAME)
+
+    ceval.c--import_name
+
+      bltinmodule.c--builtin___import__..(3RSAS)
+
+
+# ----- 5SRML -----
+# Import module.
+builtins.__import__
+
+  bltinmodule.c--builtin___import__..(3RSAS)
+
+
+# ----- 3RSAS -----
+# Import module.
+bltinmodule.c--builtin___import__
+
+  import.c--PyImport_ImportModuleLevelObject
+
+    import.c--import_find_and_load
+
+      # `interp-&gt;importlib` is module `_frozen_importlib`.
+      # `_frozen_importlib` is a frozen version of Python module
+      # `importlib._bootstrap`, embedded directly in C code.
+      _PyObject_CallMethodIdObjArgs(interp-&gt;importlib,
+        &amp;PyId__find_and_load, abs_name, interp-&gt;import_func, NULL)
+
+        _frozen_importlib._find_and_load..(6IYVN)
+
+
+# ----- 5E9VZ -----
+# Import module.
+importlib.__import__
+importlib._bootstrap.__import__
+
+  importlib._bootstrap._gcd_import
+
+    importlib._bootstrap._find_and_load..(6IYVN)
+
+
+# ----- 6IYVN -----
+# Find module spec and import module.
+importlib._bootstrap._find_and_load
+
+  importlib._bootstrap._find_and_load_unlocked
+
+    importlib._bootstrap._load_unlocked
+
+      importlib._bootstrap.module_from_spec
+
+      spec.loader.exec_module
+
+        importlib._bootstrap_external._LoaderBasics.exec_module
+
+          importlib._bootstrap_external.SourceLoader.get_code..(7HMAH)
+
+          importlib._bootstrap._call_with_frames_removed
+
+            exec(code, module.__dict__)
+
+
+# ----- 7HMAH -----
+# Get code object from source.
+importlib._bootstrap_external.SourceLoader.get_code
+
+  # Read file data.
+  importlib._bootstrap_external.FileLoader.get_data
+
+  # Check the pyc header&#39;s type.
+  importlib._bootstrap_external._classify_pyc
+
+  if the pyc header is hash based:
+    # Compute file data&#39;s hash.
+    _imp.source_hash
+
+    # Validate using hash.
+    importlib._bootstrap_external._validate_hash_pyc
+  else:
+    # Validate using timestamp.
+    importlib._bootstrap_external._validate_timestamp_pyc
+
+  if not have error:
+    # Unmarshal file data to code object.
+    importlib._bootstrap_external._compile_bytecode
+
+    return
+
+  # It is not a pyc file so assume it is a source code file.
+
+  # Compile source code to code object.
+  importlib._bootstrap_external.SourceLoader.source_to_code
+
+    importlib._bootstrap._call_with_frames_removed
+
+      builtins.compile
+
+  if is hash based:
+    # Marshal to pyc data.
+    importlib._bootstrap_external._code_to_hash_pyc
+
+      data = bytearray(MAGIC_NUMBER)
+      flags = 0b1 | checked &lt;&lt; 1
+      data.extend(_w_long(flags))
+      assert len(source_hash) == 8
+      data.extend(source_hash)
+      # marshal.dumps..(3VZ5S)
+      data.extend(marshal.dumps(code))
+  else:
+    # Marshal to pyc data.
+    importlib._bootstrap_external._code_to_timestamp_pyc
+
+      data = bytearray(MAGIC_NUMBER)
+      data.extend(_w_long(0))
+      data.extend(_w_long(mtime))
+      data.extend(_w_long(source_size))
+      # marshal.dumps..(3VZ5S)
+      data.extend(marshal.dumps(code))
+
+  # Cache pyc data.
+  importlib._bootstrap_external.SourceLoader._cache_bytecode
+
+    importlib._bootstrap_external.SourceFileLoader.set_data
+
+      # Write pyc data to file.
+      importlib._bootstrap_external._write_atomic
+
+
+# ----- 3VZ5S -----
+# Marshal code object (and other types of objects) to bytes.
+marshal.dumps
+
+  marshal.c.h--marshal_dumps
+
+    marshal.c--marshal_dumps_impl
+
+      marshal.c--PyMarshal_WriteObjectToString
+
+        marshal.c--w_object
+
+          marshal.c--w_complex_object
+            if the object is code object:
+              W_TYPE(TYPE_CODE, p);
+              w_long(co-&gt;co_argcount, p);
+              w_long(co-&gt;co_posonlyargcount, p);
+              w_long(co-&gt;co_kwonlyargcount, p);
+              w_long(co-&gt;co_nlocals, p);
+              w_long(co-&gt;co_stacksize, p);
+              w_long(co-&gt;co_flags, p);
+              w_object(co-&gt;co_code, p);
+              w_object(co-&gt;co_consts, p);
+              w_object(co-&gt;co_names, p);
+              w_object(co-&gt;co_varnames, p);
+              w_object(co-&gt;co_freevars, p);
+              w_object(co-&gt;co_cellvars, p);
+              w_object(co-&gt;co_filename, p);
+              w_object(co-&gt;co_name, p);
+              w_long(co-&gt;co_firstlineno, p);
+              w_object(co-&gt;co_lnotab, p);</code></pre>
+  </article>
+  <!-- post_content -->
+
+  <div class="prev_next_posts_block">
+    <div>
+      <span class="prev_post_prompt">Previous Post: </span><a class="prev_post_link" href="/blog/reposts/python-compiler-peg-parser">Python's compiler - PEG parser</a><span class="prev_post_date">(2019.11.04)</span>
+    </div>
+    <div>
+      <span class="next_post_prompt">First Post: </span><a class="next_post_link" href="/blog/posts/aoikwinwhich-which-program-implemented-in-various-languages">AoikWinWhich - which program implemented in various languages</a><span class="next_post_date">(2018.04.22)</span>
+    </div>
+  </div>
+
+  <!-- Special syntax below is for Vue rendering on the client side -->
+  <div v-cloak id="post_comments_block" class="post_comments_block">
+    <p class="title">Comments:</p>
+    <div class="write_comment_block">
+      <div class="comment_info_block">
+        <input v-model="commenter_name" class="commenter_name" placeholder="Your name"></input>
+        <div class="replyto_block">
+          <span>Reply to:</span>
+          <select v-model="replyto_comment_id">
+             <!-- `0` is a special value meaning no replyto -->
+             <option disabled value="0"></option>
+             <option v-for="comment_id in comment_ids" :value="comment_id">{{comment_id}}</option>
+          </select>
+        </div>
+      </div>
+      <textarea v-model="comment_content" class="comment_content" placeholder="Comment"></textarea>
+      <div><input v-on:click="comment_submit_button_on_click" class="submit_button" type="button" value="Submit"></input></div>
+    </div>
+    <ul>
+        <li v-for="comment_info in comment_infos" v-bind:class="comment_info.is_admin ? 'is_admin' : ''">
+            <a v-bind:id="'comment-' + comment_info.comment_id"
+              v-bind:href="'#comment-' + comment_info.comment_id" class="comment_id">{{comment_info.comment_id}}</a>
+            <div class="comment_content">{{comment_info.comment_content}}</div>
+            <div class="comment_info">
+              <span class="commenter_name">{{comment_info.commenter_name}}</span>
+              <span class="create_time">{{comment_info.create_time}}</span>
+              <template v-if="comment_info.replyto_comment_id > 0">
+              <span>to <a v-bind:href="'#comment-' + comment_info.replyto_comment_id">comment-{{comment_info.replyto_comment_id}}</a></span>
+              </template>
+              <a v-bind:data-comment-id="comment_info.comment_id" v-on:click="comment_reply_button_on_click" class="reply_button" href="#post_comments_block">Reply to this</a>
+            </div>
+        </li>
+    </ul>
+  </div>
+  
+
+  <!-- post_toc -->
+  <div id="post_toc_block" class="post_toc_block is_hidden">
+    <a v-on:click="post_toc_hide_link_on_click" data-shown-text="Hide" data-hidden-text="TOC" class="hide_link" href="javascript:void(0)">TOC</a>
+    <span class="title">Contents</span>
+  </div>
+  <!-- post_toc -->
+
+  <!-- back_to_top -->
+  <div id="back_to_top_block" class="back_to_top_block is_hidden">
+    <a v-on:click="back_to_top_button_on_click">
+      <div class="arrow_shape">
+        <div class="arrow_head"></div>
+        <div class="arrow_body"></div>
+      </div>
+    </a>
+  </div>
+  <!-- back_to_top -->
+
+  <div id="post_id" style="display: none;">54</div>
+  <!-- main_inner -->
+</main>
+<!-- main -->
+
+<!-- back_to_top -->
+
+<!-- footer -->
+<footer>
+  <!-- footer_inner -->
+  <span>This blog is powered by my own project <a href="https://github.com/AoiKuiyuyou/AoikSeldomStaticSite">AoikSeldomStaticSite</a>.</span>
+  <!-- footer_inner -->
+</footer>
+<!-- footer -->
+
+<!-- bottom_scripts -->
+
+<script type="text/javascript" src="/blog/libs_outer/jquery/3.3.1/jquery.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/vue/2.5.16/vue.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/toastr/2.1.3/toastr.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/highlight/9.12.0/highlight.min.js"></script>
+<script type="text/javascript" src="/blog/libs_inner/base/post.js"></script>
+<!-- bottom_scripts -->
+
+</div>
+<!-- vue_app -->
+
+</body>
+</html>

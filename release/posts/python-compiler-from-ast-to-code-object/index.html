@@ -85,6 +85,8 @@
     <div class="tags_block">
     <a class="tag" href="/blog/tags/python">python</a>
     <a class="tag" href="/blog/tags/compiler">compiler</a>
+    <a class="tag" href="/blog/tags/ast">ast</a>
+    <a class="tag" href="/blog/tags/code-object">code-object</a>
     <a class="tag" href="/blog/tags/source-code-study">source-code-study</a>
     <a class="tag" href="/blog/tags/吸星大法强吃源码">吸星大法强吃源码</a>
     </div>
@@ -106,6 +108,7 @@
 <li><a href="/blog/posts/python-compiler-from-tokens-to-cst">Python&#39;s compiler - from tokens to CST</a></li>
 <li><a href="/blog/posts/python-compiler-from-cst-to-ast">Python&#39;s compiler - from CST to AST</a></li>
 <li><a href="/blog/posts/python-compiler-from-ast-to-code-object">Python&#39;s compiler - from AST to code object</a></li>
+<li><a href="/blog/posts/python-compiler-from-code-object-to-pyc-file">Python&#39;s compiler - from code object to pyc file</a></li>
 </ul>
 <p><br><a href="https://github.com/python/cpython/blob/v3.8.0/Python/compile.c#L312">Python/compile.c::PyAST_CompileObject</a> compiles AST node to code object.</p>
 <p>First, <a href="https://github.com/python/cpython/blob/v3.8.0/Python/symtable.c#L262">Python/symtable.c::PySymtable_BuildObject</a> builds a symbol table from the AST. The
