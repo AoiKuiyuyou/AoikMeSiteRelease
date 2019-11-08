@@ -22,7 +22,7 @@
   <!-- head_meta -->
 
   <!-- head_title -->
-  <title>Python's compiler - from code object to pyc file</title>
+  <title>Python's compiler - from pyc file to code object</title>
   <!-- head_title -->
 
   <!-- head_links -->
@@ -85,14 +85,14 @@
     <div class="tags_block">
     <a class="tag" href="/blog/tags/python">python</a>
     <a class="tag" href="/blog/tags/compiler">compiler</a>
-    <a class="tag" href="/blog/tags/code-object">code-object</a>
     <a class="tag" href="/blog/tags/pyc">pyc</a>
+    <a class="tag" href="/blog/tags/code-object">code-object</a>
     <a class="tag" href="/blog/tags/source-code-study">source-code-study</a>
     <a class="tag" href="/blog/tags/吸星大法强吃源码">吸星大法强吃源码</a>
     </div>
     <div class="fields_block">
       <span class="author">Aoik,</span>
-      <span class="create_time">2019.11.06</span>
+      <span class="create_time">2019.11.08</span>
     </div>
   </div>
   <!-- post_info -->
@@ -100,7 +100,7 @@
   <!-- post_content -->
   <!-- `v-pre` aims to skip Vue parsing -->
   <article v-pre class="post_content_block markdown-body">
-  <h1 id="python-39-s-compiler-from-code-object-to-pyc-file">Python&#39;s compiler - from code object to pyc file</h1><p><strong>Python&#39;s compiler series:</strong></p>
+  <h1 id="python-39-s-compiler-from-pyc-file-to-code-object">Python&#39;s compiler - from pyc file to code object</h1><p><strong>Python&#39;s compiler series:</strong></p>
 <ul>
 <li><a href="/blog/posts/python-3.8.0-execution-flow">Python 3.8.0 execution flow</a></li>
 <li><a href="/blog/posts/python-compiler-from-grammar-to-dfa">Python&#39;s compiler - from grammar to DFA</a></li>
@@ -111,10 +111,83 @@
 <li><a href="/blog/posts/python-compiler-from-code-object-to-pyc-file">Python&#39;s compiler - from code object to pyc file</a></li>
 <li><a href="/blog/posts/python-compiler-from-pyc-file-to-code-object">Python&#39;s compiler - from pyc file to code object</a></li>
 </ul>
-<p><br>When importing a module for the first time, the module file&#39;s source code is
-compiled to code object. The code object is then marshalled to a pyc file to
-speed up the importing next time.</p>
-<pre><code># ----- 7HQTL -----
+<p><br>When running a pyc file directly, the pyc file is unmarshalled to code object.</p>
+<p>When importing a module not for the first time, the module&#39;s cached pyc file is
+unmarshalled to code object.</p>
+<pre><code># ----- 5KWHC -----
+# Run pyc file or source code file, or print error.
+pythonrun.c--PyRun_SimpleFileExFlags
+
+  # Get main module.
+  import.c--PyImport_AddModule(&quot;__main__&quot;)
+
+  if input file is pyc:
+    # Set main module&#39;s loader.
+    pythonrun.c--set_main_loader(d, filename, &quot;SourcelessFileLoader&quot;)
+
+    # Run pyc file.
+    pythonrun.c--run_pyc_file...(5QY8K)
+
+  else:
+    # Set main module&#39;s loader.
+    pythonrun.c--set_main_loader(d, filename, &quot;SourceFileLoader&quot;)
+
+    # Run source code file.
+    pythonrun.c--PyRun_FileExFlags...(5CDIU)
+
+  if failed:
+    # Print error.
+    pythonrun.c--PyErr_Print
+
+
+# ----- 5QY8K -----
+# Run pyc file.
+pythonrun.c--run_pyc_file
+
+  # Read magic number the from pyc file.
+  marshal.c--PyMarshal_ReadLongFromFile
+
+  # Read code object the from pyc file.
+  marshal.c--PyMarshal_ReadLastObjectFromFile
+
+    if file size &lt;= REASONABLE_FILE_LIMIT:
+      # Allocate a read buffer.
+
+      # Read file data into the read buffer.
+
+      # Unmarshal object from the read buffer.
+      marshal.c--PyMarshal_ReadObjectFromString
+
+        # Unmarshal object.
+        marshal.c--r_object..(5XMEB)
+    else:
+      # Unmarshal object from the file.
+      marshal.c--PyMarshal_ReadObjectFromFile
+
+        # Unmarshal object.
+        marshal.c--r_object..(5XMEB)
+
+  # Run code object.
+  pythonrun.c--run_eval_code_obj...(6NNRX)
+
+
+# ----- 6NNRX -----
+# Run code object.
+pythonrun.c--run_eval_code_obj
+  PyDict_SetItemString(globals, &quot;__builtins__&quot;, interp-&gt;builtins)
+
+  ceval.c--PyEval_EvalCode
+
+    ceval.c--PyEval_EvalCodeEx
+
+      ceval.c--_PyEval_EvalCodeWithName
+
+        ceval.c--PyEval_EvalFrameEx
+
+          ceval.c--_PyEval_EvalFrameDefault
+
+
+# ----- 7HQTL -----
 # Evaluate bytecode.
 ceval.c--_PyEval_EvalFrameDefault
 
@@ -205,88 +278,118 @@ importlib._bootstrap_external.SourceLoader.get_code
     # Unmarshal the pyc data to code object.
     importlib._bootstrap_external._compile_bytecode
 
+      # Unmarshal object.
+      marshal.loads..(3VNSD)
+
     return
 
   # It is not a pyc file so assume it is a source code file.
-
-  # Compile source code to code object.
-  importlib._bootstrap_external.SourceLoader.source_to_code
-
-    importlib._bootstrap._call_with_frames_removed
-
-      builtins.compile
-
-  if is hash based:
-    # Marshal to pyc data.
-    importlib._bootstrap_external._code_to_hash_pyc
-
-      data = bytearray(MAGIC_NUMBER)
-      flags = 0b1 | checked &lt;&lt; 1
-      data.extend(_w_long(flags))
-      assert len(source_hash) == 8
-      data.extend(source_hash)
-      # marshal.dumps..(3VZ5S)
-      data.extend(marshal.dumps(code))
-  else:
-    # Marshal to pyc data.
-    importlib._bootstrap_external._code_to_timestamp_pyc
-
-      data = bytearray(MAGIC_NUMBER)
-      data.extend(_w_long(0))
-      data.extend(_w_long(mtime))
-      data.extend(_w_long(source_size))
-      # marshal.dumps..(3VZ5S)
-      data.extend(marshal.dumps(code))
-
-  # Cache pyc data.
-  importlib._bootstrap_external.SourceLoader._cache_bytecode
-
-    importlib._bootstrap_external.SourceFileLoader.set_data
-
-      # Write pyc data to file.
-      importlib._bootstrap_external._write_atomic
+  ...
 
 
-# ----- 3VZ5S -----
-# Marshal code object (and other types of objects) to bytes.
-marshal.dumps
+# ----- 3VNSD -----
+# Unmarshal object.
+marshal.loads
 
-  marshal.c.h--marshal_dumps
+  marshal.c.h--marshal_loads
 
-    marshal.c--marshal_dumps_impl
+    marshal.c--marshal_loads_impl
 
-      marshal.c--PyMarshal_WriteObjectToString
+      marshal.c--read_object
 
-        marshal.c--w_object
+        marshal.c--r_object..(5XMEB)
 
-          marshal.c--w_complex_object
-            if the object is code object:
-              W_TYPE(TYPE_CODE, p);
-              w_long(co-&gt;co_argcount, p);
-              w_long(co-&gt;co_posonlyargcount, p);
-              w_long(co-&gt;co_kwonlyargcount, p);
-              w_long(co-&gt;co_nlocals, p);
-              w_long(co-&gt;co_stacksize, p);
-              w_long(co-&gt;co_flags, p);
-              w_object(co-&gt;co_code, p);
-              w_object(co-&gt;co_consts, p);
-              w_object(co-&gt;co_names, p);
-              w_object(co-&gt;co_varnames, p);
-              w_object(co-&gt;co_freevars, p);
-              w_object(co-&gt;co_cellvars, p);
-              w_object(co-&gt;co_filename, p);
-              w_object(co-&gt;co_name, p);
-              w_long(co-&gt;co_firstlineno, p);
-              w_object(co-&gt;co_lnotab, p);</code></pre>
+
+# ----- 5XMEB -----
+# Unmarshal object.
+marshal.c--r_object
+  code = r_byte(p)
+  flag = code &amp; FLAG_REF;
+  type = code &amp; ~FLAG_REF;
+  switch on `type`
+  case TYPE_CODE:
+    argcount = (int)r_long(p);
+    posonlyargcount = (int)r_long(p);
+    kwonlyargcount = (int)r_long(p);
+    nlocals = (int)r_long(p);
+    stacksize = (int)r_long(p);
+    flags = (int)r_long(p);
+    code = r_object(p);
+    consts = r_object(p);
+    names = r_object(p);
+    varnames = r_object(p);
+    freevars = r_object(p);
+    cellvars = r_object(p);
+    filename = r_object(p);
+    name = r_object(p);
+    firstlineno = (int)r_long(p);
+    lnotab = r_object(p);
+    # codeobject.c--PyCode_NewWithPosOnlyArgs..(6DQ7T)
+    PyCode_NewWithPosOnlyArgs(
+      argcount, posonlyargcount, kwonlyargcount,
+      nlocals, stacksize, flags,
+      code, consts, names, varnames,
+      freevars, cellvars, filename, name,
+      firstlineno, lnotab
+    );
+
+
+# ----- 6DQ7T -----
+codeobject.c--PyCode_NewWithPosOnlyArgs
+  # codeobject.c--intern_strings
+  intern_strings(names);
+  intern_strings(varnames);
+  intern_strings(freevars);
+  intern_strings(cellvars);
+
+  # codeobject.c--intern_string_constants
+  intern_string_constants(consts);
+
+  if have cell names:
+    # Compute `cell2arg`.
+
+    if `cell2arg` is not used:
+      cell2arg = NULL;
+  }
+
+  # code.h--PyCodeObject
+  # codeobject.c--PyCode_Type
+  co = PyObject_NEW(PyCodeObject, &amp;PyCode_Type);
+
+  co-&gt;co_argcount = argcount;
+  co-&gt;co_posonlyargcount = posonlyargcount;
+  co-&gt;co_kwonlyargcount = kwonlyargcount;
+  co-&gt;co_nlocals = nlocals;
+  co-&gt;co_stacksize = stacksize;
+  co-&gt;co_flags = flags;
+  co-&gt;co_code = code;
+  co-&gt;co_consts = consts;
+  co-&gt;co_names = names;
+  co-&gt;co_varnames = varnames;
+  co-&gt;co_freevars = freevars;
+  co-&gt;co_cellvars = cellvars;
+  co-&gt;co_cell2arg = cell2arg;
+  co-&gt;co_filename = filename;
+  co-&gt;co_name = name;
+  co-&gt;co_firstlineno = firstlineno;
+  co-&gt;co_lnotab = lnotab;
+  co-&gt;co_zombieframe = NULL;
+  co-&gt;co_weakreflist = NULL;
+  co-&gt;co_extra = NULL;
+
+  co-&gt;co_opcache_map = NULL;
+  co-&gt;co_opcache = NULL;
+  co-&gt;co_opcache_flag = 0;
+  co-&gt;co_opcache_size = 0;</code></pre>
   </article>
   <!-- post_content -->
 
   <div class="prev_next_posts_block">
     <div>
-      <span class="prev_post_prompt">Previous Post: </span><a class="prev_post_link" href="/blog/reposts/python-compiler-peg-parser">Python's compiler - PEG parser</a><span class="prev_post_date">(2019.11.04)</span>
+      <span class="prev_post_prompt">Previous Post: </span><a class="prev_post_link" href="/blog/posts/python-compiler-from-code-object-to-pyc-file">Python's compiler - from code object to pyc file</a><span class="prev_post_date">(2019.11.06)</span>
     </div>
     <div>
-      <span class="next_post_prompt">Next Post: </span><a class="next_post_link" href="/blog/posts/python-compiler-from-pyc-file-to-code-object">Python's compiler - from pyc file to code object</a><span class="next_post_date">(2019.11.08)</span>
+      <span class="next_post_prompt">First Post: </span><a class="next_post_link" href="/blog/posts/aoikwinwhich-which-program-implemented-in-various-languages">AoikWinWhich - which program implemented in various languages</a><span class="next_post_date">(2018.04.22)</span>
     </div>
   </div>
 
@@ -344,7 +447,7 @@ marshal.dumps
   </div>
   <!-- back_to_top -->
 
-  <div id="post_id" style="display: none;">54</div>
+  <div id="post_id" style="display: none;">55</div>
   <!-- main_inner -->
 </main>
 <!-- main -->

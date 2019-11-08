@@ -109,6 +109,7 @@
 <li><a href="/blog/posts/python-compiler-from-cst-to-ast">Python&#39;s compiler - from CST to AST</a></li>
 <li><a href="/blog/posts/python-compiler-from-ast-to-code-object">Python&#39;s compiler - from AST to code object</a></li>
 <li><a href="/blog/posts/python-compiler-from-code-object-to-pyc-file">Python&#39;s compiler - from code object to pyc file</a></li>
+<li><a href="/blog/posts/python-compiler-from-pyc-file-to-code-object">Python&#39;s compiler - from pyc file to code object</a></li>
 </ul>
 <p><br><a href="https://github.com/python/cpython/blob/v3.8.0/Python/compile.c#L312">Python/compile.c::PyAST_CompileObject</a> compiles AST node to code object.</p>
 <p>First, <a href="https://github.com/python/cpython/blob/v3.8.0/Python/symtable.c#L262">Python/symtable.c::PySymtable_BuildObject</a> builds a symbol table from the AST. The
@@ -1181,7 +1182,33 @@ codeobject.c--PyCode_NewWithPosOnlyArgs
 
   # code.h--PyCodeObject
   # codeobject.c--PyCode_Type
-  PyObject_NEW(PyCodeObject, &amp;PyCode_Type)</code></pre>
+  co = PyObject_NEW(PyCodeObject, &amp;PyCode_Type)
+
+  co-&gt;co_argcount = argcount;
+  co-&gt;co_posonlyargcount = posonlyargcount;
+  co-&gt;co_kwonlyargcount = kwonlyargcount;
+  co-&gt;co_nlocals = nlocals;
+  co-&gt;co_stacksize = stacksize;
+  co-&gt;co_flags = flags;
+  co-&gt;co_code = code;
+  co-&gt;co_consts = consts;
+  co-&gt;co_names = names;
+  co-&gt;co_varnames = varnames;
+  co-&gt;co_freevars = freevars;
+  co-&gt;co_cellvars = cellvars;
+  co-&gt;co_cell2arg = cell2arg;
+  co-&gt;co_filename = filename;
+  co-&gt;co_name = name;
+  co-&gt;co_firstlineno = firstlineno;
+  co-&gt;co_lnotab = lnotab;
+  co-&gt;co_zombieframe = NULL;
+  co-&gt;co_weakreflist = NULL;
+  co-&gt;co_extra = NULL;
+
+  co-&gt;co_opcache_map = NULL;
+  co-&gt;co_opcache = NULL;
+  co-&gt;co_opcache_flag = 0;
+  co-&gt;co_opcache_size = 0;</code></pre>
   </article>
   <!-- post_content -->
 
