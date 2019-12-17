@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- head -->
+<head>
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-117972998-1"></script>
+  <script>
+    var hostname = window.location.hostname;
+    if (hostname && hostname !== '127.0.0.1' && hostname !== 'localhost' && hostname !== 'aoik.me.local') {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-117972998-1');
+    }
+  </script>
+  <!-- Google Analytics -->
+
+  <!-- head_meta -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <!-- head_meta -->
+
+  <!-- head_title -->
+  <title>LLVM - Compile LLVM</title>
+  <!-- head_title -->
+
+  <!-- head_links -->
+  <link rel="stylesheet" href="/blog/libs_outer/bootstrap/4.0.0/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/blog/libs_outer/github-markdown-css/2.10.0/github-markdown.css">
+  <link rel="stylesheet" href="/blog/libs_inner/base/base.css">
+  <!-- head_links -->
+
+  <!-- head_links2 -->
+<link rel="stylesheet" href="/blog/libs_outer/toastr/2.1.3/toastr.min.css">
+  <!-- head_links2 -->
+
+  <!-- head_styles -->
+  <!-- head_styles -->
+</head>
+<!-- head -->
+
+<body>
+<div id="vue_app">
+
+<!-- header -->
+<header>
+  <!-- header_inner -->
+  <!-- logo -->
+  <a class="logo_block" href="/blog"><span class="logo_text">Aoik</span></a>
+  <!-- nav -->
+  <nav class="nav_block">
+    <div class="nav_table">
+      <a class="current" href="/blog/posts"><span>Posts</span></a>
+      <a class="" href="/blog/reposts"><span>Reposts</span></a>
+      <a class="" href="/blog/tags"><span>Tags</span></a>
+      <a target="_blank" href="https://github.com/AoiKuiyuyou/Aoik/blob/master/README.md"><span>Github</span></a>
+      <a target="_blank" href="http://aoikuiyuyou.github.io/me.html"><span>Resume</span></a>
+    </div>
+  </nav>
+  <!-- header_inner -->
+</header>
+<!-- header -->
+
+<!-- main -->
+<main>
+  <!-- main_inner -->
+  
+  <!-- breadcrumbs -->
+  <div class="breadcrumbs_block">
+    <a href="/blog">Home</a>
+    <span class="sep">&gt;</span>
+    <a href="/blog/posts">Posts</a>
+    <span class="sep">&gt;</span>
+    <a href="">This</a>
+  </div>
+  <!-- breadcrumbs -->
+
+
+
+  <!-- post_info -->
+  <div class="post_info_block">
+    <div class="tags_block">
+    <a class="tag" href="/blog/tags/llvm">llvm</a>
+    </div>
+    <div class="fields_block">
+      <span class="author">Aoik,</span>
+      <span class="create_time">2019.12.17</span>
+    </div>
+  </div>
+  <!-- post_info -->
+
+  <!-- post_content -->
+  <!-- `v-pre` aims to skip Vue parsing -->
+  <article v-pre class="post_content_block markdown-body">
+  <h1 id="llvm-compile-llvm">LLVM - Compile LLVM</h1><h2 id="compile-on-centos-7"><a class="anchor" href="#compile-on-centos-7"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Compile on CentOS 7</h2><h3 id="install-gcc"><a class="anchor" href="#install-gcc"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Install GCC</h3><p>Run:</p>
+<pre><code>yum install -y centos-release-scl
+
+scl enable devtoolset-7 bash</code></pre><h3 id="install-cmake"><a class="anchor" href="#install-cmake"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Install CMake</h3><p>Run:</p>
+<pre><code>mkdir -pv /opt/cmake/3.16.1
+
+cd /opt/cmake/3.16.1
+
+wget https://github.com/Kitware/CMake/releases/download/v3.16.1/cmake-3.16.1-Linux-x86_64.tar.gz
+
+tar xvf cmake-3.16.1-Linux-x86_64.tar.gz
+
+mv cmake-3.16.1-Linux-x86_64 dst
+
+ln -sf /opt/cmake/3.16.1/dst/bin/cmake /usr/local/bin/cmake</code></pre><h3 id="download-llvm-source-code"><a class="anchor" href="#download-llvm-source-code"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Download LLVM source code</h3><p>Run:</p>
+<pre><code>mkdir -pv /opt/llvm/9.0.1rc3
+
+cd /opt/llvm/9.0.1rc3
+
+wget https://github.com/llvm/llvm-project/releases/download/llvmorg-9.0.1-rc3/llvm-9.0.1rc3.src.tar.xz
+
+tar xvf llvm-9.0.1rc3.src.tar.xz
+
+mv llvm-9.0.1rc3.src src</code></pre><h3 id="compile-llvm-source-code"><a class="anchor" href="#compile-llvm-source-code"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Compile LLVM source code</h3><p>Run:</p>
+<pre><code>mkdir -pv /opt/llvm/9.0.1rc3/dst
+
+cd /opt/llvm/9.0.1rc3/dst
+
+cmake ../src
+
+make -j8
+
+make install</code></pre><p><code>-j8</code> uses 8 threads to compile. It may overload the OS and cause <code>ld</code> to be
+killed by the OS during linking, in which case we can rerun with <code>make</code> only.</p>
+<h3 id="compile-llvm-example-code"><a class="anchor" href="#compile-llvm-example-code"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Compile LLVM example code</h3><p>Use clang++ to compile the example:</p>
+<pre><code>yum install llvm-toolset-7.0
+
+scl enable llvm-toolset-7.0 bash
+
+cd /opt/llvm/9.0.1rc3/src/examples/Kaleidoscope/Chapter2
+
+clang++ -c $(llvm-config --cxxflags) toy.cpp -o toy.o
+
+clang++ toy.o $(llvm-config --ldflags --libs) -ldl -lncurses -lpthread -lz -o toy</code></pre><p>Somehow using g++ to compile the example failed with <code>undefined reference</code>
+error:</p>
+<pre><code>cd /opt/llvm/9.0.1rc3/src/examples/Kaleidoscope/Chapter2
+
+g++ -c $(llvm-config --cxxflags) toy.cpp -o toy.o
+
+g++ toy.o $(llvm-config --ldflags --libs) -ldl -lncurses -lpthread -lz -o toy</code></pre><h2 id="compile-on-windows"><a class="anchor" href="#compile-on-windows"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Compile on Windows</h2><h3 id="install-visual-studio"><a class="anchor" href="#install-visual-studio"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Install Visual Studio</h3><p>We use Visual Studio 2017 to build LLVM.</p>
+<h3 id="install-cmake"><a class="anchor" href="#install-cmake"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Install CMake</h3><p>Download CMake from <a href="https://github.com/Kitware/CMake/releases/download/v3.16.1/cmake-3.16.1-win32-x86.zip">here</a>.</p>
+<p>Decompress to <code>D:\cmake\3.16.1\dst</code></p>
+<p>Add directory path <code>D:\cmake\3.16.1\dst\bin</code> to environment variable <code>PATH</code>.</p>
+<h3 id="compile-zlib"><a class="anchor" href="#compile-zlib"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Compile zlib</h3><p>Download zlib source code from <a href="https://www.zlib.net/zlib-1.2.11.tar.gz">here</a>.</p>
+<p>Decompress to <code>D:\zlib\1.2.11\src</code>.</p>
+<p>Compile zlib:</p>
+<pre><code>mkdir D:\zlib\1.2.11\dst
+
+cd D:\zlib\1.2.11\dst
+
+cmake -G &quot;Visual Studio 15 2017&quot; -T host=x64 -A x64 ..\src
+
+cmake --build . --config Release</code></pre><p>The result file is <code>D:\zlib\1.2.11\dst\Release\zlibstatic.lib</code>.</p>
+<h3 id="download-llvm-source-code"><a class="anchor" href="#download-llvm-source-code"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Download LLVM source code</h3><p>Download LLVM source code from <a href="https://github.com/llvm/llvm-project/releases/download/llvmorg-9.0.1-rc3/llvm-9.0.1rc3.src.tar.xz">here</a>.</p>
+<p>Decompress to <code>D:\llvm\9.0.1rc3\src</code>.</p>
+<h3 id="prepare-build-script"><a class="anchor" href="#prepare-build-script"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Prepare build script</h3><p>We use a modified version of the build script from the <a href="https://github.com/ajkhoury/LLVM-Build-Windows/blob/master/build-llvm.bat">LLVM-Build-Windows</a> project. The
+modification is needed to pass the correct architecture, build type and build
+directory to CMake.</p>
+<p>Create build script <code>build-llvm.bat</code>:</p>
+<pre><code>@echo off
+setlocal
+
+REM
+REM Convert backslashes to forward slashes for peace of mind.
+REM
+set CWD=%~dp0
+set &quot;CWD=%CWD:\=/%&quot;
+
+REM
+REM Check what architecture we are running on
+REM
+if &quot;%PROCESSOR_ARCHITECTURE%&quot;==&quot;AMD64&quot; (
+    echo Detected 64 bit system...
+    set SYSARCH=64
+) else if &quot;%PROCESSOR_ARCHITECTURE%&quot;==&quot;x86&quot; (
+    if &quot;%PROCESSOR_ARCHITEW6432%&quot;==&quot;AMD64&quot; (
+        echo Detected 64 bit system running 32 bit shell...
+        set SYSARCH=64
+    ) else (
+        echo Detected 32 bit system...
+        set SYSARCH=32
+    )
+) else (
+    echo Error: Could not detect current platform architecture!&quot;
+    exit /b 5
+)
+
+REM
+REM Iterate command line parameters
+REM
+:checkparams
+REM Help option
+if &quot;x%~1&quot; == &quot;x-help&quot; (
+  call :printhelp &quot;%~nx0&quot;
+  exit /b %ERRORLEVEL%
+)
+if &quot;x%~1&quot; == &quot;x--help&quot; (
+  call :printhelp &quot;%~nx0&quot;
+  exit /b %ERRORLEVEL%
+)
+if &quot;x%~1&quot; == &quot;x-?&quot; (
+  call :printhelp &quot;%~nx0&quot;
+  exit /b %ERRORLEVEL%
+)
+if &quot;x%~1&quot; == &quot;x/?&quot; (
+  call :printhelp &quot;%~nx0&quot;
+  exit /b %ERRORLEVEL%
+)
+if &quot;x%~1&quot; == &quot;x-here&quot; shift&amp; set CHERE_INVOKING=enabled_from_arguments&amp; goto :checkparams
+if &quot;x%~1&quot; == &quot;x-target&quot; (
+    if &quot;x%~2&quot; == &quot;x&quot; (
+        echo Architecture was not defined for -target parameter. 1&gt;&amp;2
+        exit /b 2
+    )
+    set TARGET_ARCH=%~2
+)&amp; shift&amp; shift&amp; goto :checkparams
+if &quot;x%~1&quot; == &quot;x-directory&quot; (
+    if &quot;x%~2&quot; == &quot;x&quot; (
+        echo Build directory is not specified for -builddir parameter. 1&gt;&amp;2
+        exit /b 2
+    )
+    if defined BUILD_DIR (
+        echo Build directory cannot be defined more than once. 1&gt;&amp;2
+        exit /b 3
+    )
+    if exist %~2 goto skip1
+    echo Making new build directory &quot;%~2&quot;
+    mkdir %~2
+    :skip1
+    cd /d &quot;%~2&quot; || (
+        echo Cannot set specified build directory &quot;%~2&quot;. 1&gt;&amp;2
+        exit /b 2
+    )
+    set BUILD_DIR=%CWD%/%~2
+)&amp; shift&amp; shift&amp; goto :checkparams
+if &quot;x%~1&quot; == &quot;x-configure&quot; shift&amp; set CONFIGURE=yes&amp; goto :checkparams
+if &quot;x%~1&quot; == &quot;x-build&quot; shift&amp; set BUILD=yes&amp; goto :checkparams
+if &quot;x%~1&quot; == &quot;x-static&quot; shift&amp; set STATIC=yes&amp; goto :checkparams
+if &quot;x%~1&quot; == &quot;x-debug&quot; shift&amp; set DEBUG=yes&amp; goto :checkparams
+
+if not defined DEBUG (set BUILD_TYPE=Release) else (set BUILD_TYPE=Debug)
+
+:next
+if not defined CONFIGURE (
+    echo CONFIGURE=no
+    goto nextparam1
+) else (
+    echo CONFIGURE=%CONFIGURE%
+    goto nextparam1
+)
+:nextparam1
+if not defined BUILD (
+    echo BUILD=no
+    goto nextparam2
+) else (
+    echo BUILD=%BUILD%
+    goto nextparam2
+)
+:nextparam2
+if not defined STATIC (
+    echo STATIC=no
+    goto nextparam3
+) else (
+    echo STATIC=%STATIC%
+    goto nextparam3
+)
+:nextparam3
+if not defined DEBUG (
+    echo DEBUG=no
+    goto nextparam4
+) else (
+    echo DEBUG=%DEBUG%
+    goto nextparam4
+)
+:nextparam4
+if not defined TARGET_ARCH (
+    set TARGET_ARCH=amd64
+    echo Defaulted TARGET_ARCH to amd64
+    goto nextparam5
+) else (
+    echo TARGET_ARCH=%TARGET_ARCH%
+    goto nextparam5
+)
+:nextparam5
+echo BUILD_DIR=%BUILD_DIR%
+
+REM
+REM Check if already running in an environment with VS setup
+REM
+if defined VCINSTALLDIR (
+    if defined VisualStudioVersion (
+        echo Existing Visual Studio environment version %VisualStudioVersion% detected...
+        if &quot;%VisualStudioVersion%&quot;==&quot;15.0&quot; (
+            set MSVC_VER=15
+            goto msvcdone
+        ) else if &quot;%VisualStudioVersion%&quot;==&quot;14.0&quot; (
+            set MSVC_VER=14
+            goto msvcdone
+        ) else if &quot;%VisualStudioVersion%&quot;==&quot;12.0&quot; (
+            set MSVC_VER=12
+            goto msvcdone
+        ) else (
+            echo Unknown Visual Studio environment detected &#39;%VisualStudioVersion%&#39;, Creating a new one...
+        )
+    )
+)
+REM
+REM Check for default install locations based on current system architecture
+REM
+if &quot;%SYSARCH%&quot;==&quot;32&quot; (
+    set MSVCVARSDIR=
+    set WOWNODE=
+) else if &quot;%SYSARCH%&quot;==&quot;64&quot; (
+    set MSVCVARSDIR=\amd64
+    set WOWNODE=\WOW6432Node
+) else (
+    echo Error: Running on invalid architecture!
+    exit /b 5
+)
+echo TARGET_ARCH=%TARGET_ARCH%
+if &quot;%TARGET_ARCH%&quot; == &quot;64&quot; (
+    set TARGET_ARCH_BITS=64
+) else if &quot;%TARGET_ARCH%&quot; == &quot;amd64&quot; (
+    set TARGET_ARCH_BITS=64
+) else if &quot;%TARGET_ARCH%&quot; == &quot;x64&quot; (
+    set TARGET_ARCH_BITS=64
+) else if &quot;%TARGET_ARCH%&quot; == &quot;32&quot; (
+    set TARGET_ARCH_BITS=32
+) else if &quot;%TARGET_ARCH%&quot; == &quot;Win32&quot; (
+    set TARGET_ARCH_BITS=32
+) else if &quot;%TARGET_ARCH%&quot; == &quot;x86&quot; (
+    set TARGET_ARCH_BITS=32
+) else (
+    echo Error: Invalid target architecture specified!
+    exit /b 5
+)
+reg.exe query &quot;HKLM\SOFTWARE%WOWNODE%\Microsoft\VisualStudio\SxS\VS7&quot; /v &quot;15.0&quot; &gt;nul 2&gt;&amp;1
+if not ERRORLEVEL 1 (
+    echo Visual Studio 2017 installation detected...
+    for /f &quot;skip=2 tokens=2,*&quot; %%a in (&#39;reg.exe query &quot;HKLM\SOFTWARE%WOWNODE%\Microsoft\VisualStudio\SxS\VS7&quot; /v &quot;15.0&quot;&#39;) do (
+        if exist &quot;%%bVC\Auxiliary\Build\vcvars%TARGET_ARCH_BITS%.bat&quot; (
+            set VSINSTALLDIR=%%b
+            echo Found vcvars file at &quot;%%bVC\Auxiliary\Build\vcvars%TARGET_ARCH_BITS%.bat&quot;
+            call &quot;%%bVC\Auxiliary\Build\vcvars%TARGET_ARCH_BITS%.bat&quot; &gt;nul 2&gt;&amp;1
+            goto breakoutmsvc15
+        ) else (
+            echo Error: vcvars &quot;%%bVC\Auxiliary\Build\vcvars%TARGET_ARCH_BITS%.bat&quot; not found!
+        )
+    )
+    exit /b 5
+    :breakoutmsvc15
+    set MSVC_VER=15
+    goto msvcdone
+)
+reg.exe query &quot;HKLM\Software%WOWNODE%\Microsoft\VisualStudio\14.0&quot; /v &quot;InstallDir&quot; &gt;nul 2&gt;&amp;1
+if not ERRORLEVEL 1 (
+    echo Visual Studio 2015 installation detected...
+    for /f &quot;skip=2 tokens=2,*&quot; %%a in (&#39;reg.exe query &quot;HKLM\Software%WOWNODE%\Microsoft\VisualStudio\14.0&quot; /v &quot;InstallDir&quot;&#39;) do (
+        if exist &quot;%%b..\..\VC\bin%MSVCVARSDIR%\vcvars%TARGET_ARCH_BITS%.bat&quot; (
+            set VSINSTALLDIR=%%b..\..\
+            echo Found vcvars file at &quot;%%b..\..\VC\bin%MSVCVARSDIR%\vcvars%TARGET_ARCH_BITS%.bat&quot;
+            call &quot;%%b..\..\VC\bin%MSVCVARSDIR%\vcvars%TARGET_ARCH_BITS%.bat&quot; &gt;nul 2&gt;&amp;1
+            goto breakoutmsvc14
+        ) else (
+            echo Error: vcvars &quot;%%b..\..\VC\bin%MSVCVARSDIR%\vcvars%TARGET_ARCH_BITS%.bat&quot; not found!
+        )
+    )
+    exit /b 5
+    :breakoutmsvc14
+    set MSVC_VER=14
+    goto msvcdone
+)
+reg.exe query &quot;HKLM\Software%WOWNODE%\Microsoft\VisualStudio\12.0&quot; /v &quot;InstallDir&quot; &gt;nul 2&gt;&amp;1
+if not ERRORLEVEL 1 (
+    echo Visual Studio 2013 installation detected...
+    for /f &quot;skip=2 tokens=2,*&quot; %%a in (&#39;reg.exe query &quot;HKLM\Software%WOWNODE%\Microsoft\VisualStudio\12.0&quot; /v &quot;InstallDir&quot;&#39;) do (
+        if exist &quot;%%b..\..\VC\bin%MSVCVARSDIR%\vcvars%TARGET_ARCH_BITS%.bat&quot; (
+            set VSINSTALLDIR=%%b..\..\
+            echo Found vcvars file at &quot;%%b..\..\VC\bin%MSVCVARSDIR%\vcvars%TARGET_ARCH_BITS%.bat&quot;
+            call &quot;%%b..\..\VC\bin%MSVCVARSDIR%\vcvars%TARGET_ARCH_BITS%.bat&quot; &gt;nul 2&gt;&amp;1
+            goto breakoutmsvc12
+        ) else (
+            echo Error: vcvars &quot;%%b..\..\VC\bin%MSVCVARSDIR%\vcvars%TARGET_ARCH_BITS%.bat&quot; not found!
+        )
+    )
+     exit /b 5
+    :breakoutmsvc12
+    set MSVC_VER=12
+    goto msvcdone
+)
+reg.exe query &quot;HKLM\Software%WOWNODE%\Microsoft\VisualStudio\9.0&quot; /v &quot;InstallDir&quot; &gt;nul 2&gt;&amp;1
+if not ERRORLEVEL 1 (
+    echo Visual Studio 2008 installation detected...
+    for /f &quot;skip=2 tokens=2,*&quot; %%a in (&#39;reg.exe query &quot;HKLM\Software%WOWNODE%\Microsoft\VisualStudio\12.0&quot; /v &quot;InstallDir&quot;&#39;) do (
+        if exist &quot;%%b..\..\VC\bin%MSVCVARSDIR%\vcvars%TARGET_ARCH_BITS%.bat&quot; (
+            set VSINSTALLDIR=%%b..\..\
+            echo Found vcvars file at &quot;%%b..\..\VC\bin%MSVCVARSDIR%\vcvars%TARGET_ARCH_BITS%.bat&quot;
+            call &quot;%%b..\..\VC\bin%MSVCVARSDIR%\vcvars%TARGET_ARCH_BITS%.bat&quot; &gt;nul 2&gt;&amp;1
+            goto breakoutmsvc9
+        ) else (
+            echo Error: vcvars &quot;%%b..\..\VC\bin%MSVCVARSDIR%\vcvars%TARGET_ARCH_BITS%.bat&quot; not found!
+        )
+    )
+     exit /b 5
+    :breakoutmsvc9
+    set MSVC_VER=9
+    goto msvcdone
+)
+REM
+REM If none were found check for an environment variable to help locate the VS installation
+REM
+if defined VS140COMNTOOLS (
+    if exist &quot;%VS140COMNTOOLS%\..\..\VC\vcvars%TARGET_ARCH_BITS%.bat&quot; (
+        set VSINSTALLDIR=%VS140COMNTOOLS%\..\..\
+        echo Visual Studio 2015 environment detected through environment variable...
+        call &quot;%VS140COMNTOOLS%\..\..\VC\vcvars%TARGET_ARCH_BITS%.bat&quot; &gt;nul 2&gt;&amp;1
+        set MSVC_VER=14
+        goto msvcdone
+    )
+)
+if defined VS120COMNTOOLS (
+    if exist &quot;%VS120COMNTOOLS%\..\..\VC\vcvars%TARGET_ARCH_BITS%.bat&quot; (
+        set VSINSTALLDIR=%VS120COMNTOOLS%\..\..\
+        echo Visual Studio 2013 environment detected through environment variable...
+        call &quot;%VS120COMNTOOLS%\..\..\VC\vcvars%TARGET_ARCH_BITS%.bat&quot; &gt;nul 2&gt;&amp;1
+        set MSVC_VER=12
+        goto msvcdone
+    )
+)
+echo Error: Could not find valid Visual Studio installation!
+exit /b 6
+
+:msvcdone
+
+echo VSINSTALLDIR=%VSINSTALLDIR%
+
+:checkconfigure
+if defined CONFIGURE (
+    echo Configuring...
+    goto doconfigure
+)
+:checkbuild
+if defined BUILD (
+    echo Building...
+    goto dobuild
+)
+
+:doconfigure
+if not defined STATIC (set CRT_TYPE_RELEASE=MD&amp; set CRT_TYPE_DEBUG=MDd) else (set CRT_TYPE_RELEASE=MT&amp; set CRT_TYPE_DEBUG=MTd)
+if &quot;x%TARGET_ARCH_BITS%&quot; == &quot;x64&quot; (set ARCH=x64) else (set ARCH=x86)
+if &quot;x%ARCH%&quot; == &quot;xx64&quot; (set LLVM_BIN_PATH=C:/PROGRA~1/LLVM/bin) else (set LLVM_BIN_PATH=C:/PROGRA~2/LLVM/bin)
+if &quot;x%ARCH%&quot; == &quot;xx64&quot; (set GENERATOR_PLATFORM=x64) else (set GENERATOR_PLATFORM=)
+
+set ZLIB_PATH=%CWD%third-party/zlib
+set ZLIB_LIBRARY_PATH=%ZLIB_PATH%/%ARCH%
+set ZLIB_INCLUDE_PATH=%ZLIB_PATH%
+echo ZLIB_PATH is %ZLIB_PATH%
+
+cmake -T host=%ARCH% -A %ARCH% -H. -G&quot;Visual Studio 15 2017&quot; -B &quot;%BUILD_DIR%&quot;^
+        -DBUILD_SHARED_LIBS=Off^
+        -DLLVM_INCLUDE_TESTS=Off^
+        -DLLVM_ENABLE_RTTI=0^
+        -DLLVM_ENABLE_DIA_SDK=1^
+        -DLLVM_USE_CRT_RELEASE=%CRT_TYPE_RELEASE%^
+        -DLLVM_USE_CRT_DEBUG=%CRT_TYPE_DEBUG%^
+        -DLLVM_TARGETS_TO_BUILD=&quot;X86&quot;^
+        -DHAVE_LIBZ=1^
+        -DCMAKE_C_FLAGS=&quot;/I%ZLIB_INCLUDE_PATH% /DLLVM_ENABLE_DIA_SDK&quot;^
+        -DCMAKE_CXX_FLAGS=&quot;/I%ZLIB_INCLUDE_PATH% /DLLVM_ENABLE_DIA_SDK&quot;^
+        -DCMAKE_EXE_LINKER_FLAGS=&quot;%ZLIB_LIBRARY_PATH%/zlibstatic.lib&quot;^
+        -DCMAKE_STATIC_LINKER_FLAGS=&quot;%ZLIB_LIBRARY_PATH%/zlibstatic.lib&quot;^
+        -DCMAKE_SHARED_LINKER_FLAGS=&quot;%ZLIB_LIBRARY_PATH%/zlibstatic.lib&quot;^
+        -DCMAKE_GENERATOR_PLATFORM=%GENERATOR_PLATFORM%^
+        -DCMAKE_BUILD_TYPE=%BUILD_TYPE%^
+        %CWD%
+
+if defined BUILD goto checkbuild
+exit /b 0
+
+:dobuild
+echo %BUILD_TYPE%
+:cmake --build &quot;%BUILD_DIR%&quot; --config %BUILD_TYPE%
+exit /b 0
+
+:printhelp
+echo Usage:
+echo     %~1 [options]
+echo.
+echo Options:
+echo     -configure                   Configure the project
+echo     -build                       Build the project
+echo     -static                      Configure and build the project statically
+echo     -debug                       Build project with debug configuration
+echo     -target ARCH                 Set the target architecture
+echo     -directory DIRECTORY         Use specified DIRECTORY for build directory
+echo     -help ^| --help ^| -? ^| /?     Display this help and exit
+echo.
+exit /b 0
+
+pause&gt;nul</code></pre><h3 id="compile-llvm-source-code"><a class="anchor" href="#compile-llvm-source-code"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Compile LLVM source code</h3><p>Put <code>D:\zlib\1.2.11\dst\Release\zlibstatic.lib</code> to
+<code>D:\llvm\9.0.1rc3\src\third-party\zlib\x64\zlibstatic.lib</code>.</p>
+<p>Put build script <code>build-llvm.bat</code> to <code>D:\llvm\9.0.1rc3\src\build-llvm.bat</code>.</p>
+<p>Run:</p>
+<pre><code>cd D:\llvm\9.0.1rc3\src
+
+build-llvm.bat -configure -build -static -target x64 -directory build_x64</code></pre><h3 id="compile-llvm-example-code"><a class="anchor" href="#compile-llvm-example-code"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg> </a>Compile LLVM example code</h3><p>In Visual Studio 2017, create an <code>Visual C++ - Empty Project</code>.</p>
+<p>In <code>Solution Explorer</code>, right click the project name, select <code>Properties</code>.</p>
+<p>In <code>Configuration Properties</code> - <code>C/C++</code> - <code>General</code>, set
+<code>Additional Include Directories</code> to be
+<code>D:\llvm\9.0.1rc3\src\include;D:\llvm\9.0.1rc3\src\build_x64\include;</code>.</p>
+<p>In <code>Configuration Properties</code> - <code>C/C++</code> - <code>General</code>, set <code>SDL checks</code> to be
+<code>No (/sdl-)</code>.</p>
+<p>In <code>Configuration Properties</code> - <code>C/C++</code> - <code>Code Generation</code>, set
+<code>Runtime Library</code> to be <code>Multi-threaded (/MT)</code>. This value should correspond to
+the build type:</p>
+<ul>
+<li><strong>Debug</strong>: Multi-threaded Debug (/MTd)</li>
+<li><strong>Release</strong>: Multi-threaded (/MT)</li>
+<li><strong>MinSizeRel</strong>: Multi-threaded DLL (/MD)</li>
+<li><strong>RelWithDebInfo</strong>: Multi-threaded DLL (/MD)</li>
+</ul>
+<p>In <code>Configuration Properties</code> - <code>Command Line</code>, set <code>Additional Options</code> to be
+<code>/wd4146 -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS</code>.</p>
+<p>In <code>Configuration Properties</code> - <code>Linker</code> - <code>General</code>, set
+<code>Additional Library Directories</code> to be <code>D:\llvm\9.0.1rc3\src\build_x64\Release\lib</code>.</p>
+<p>In <code>Configuration Properties</code> - <code>Linker</code> - <code>Input</code>, set <code>Additional Dependencies</code> to be <code>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies);LLVM-C.lib;LLVMAggressiveInstCombine.lib;LLVMAnalysis.lib;LLVMAsmParser.lib;LLVMAsmPrinter.lib;LLVMBinaryFormat.lib;LLVMBitReader.lib;LLVMBitstreamReader.lib;LLVMBitWriter.lib;LLVMCodeGen.lib;LLVMCore.lib;LLVMCoroutines.lib;LLVMCoverage.lib;LLVMDebugInfoCodeView.lib;LLVMDebugInfoDWARF.lib;LLVMDebugInfoGSYM.lib;LLVMDebugInfoMSF.lib;LLVMDebugInfoPDB.lib;LLVMDemangle.lib;LLVMDlltoolDriver.lib;LLVMExecutionEngine.lib;LLVMFuzzMutate.lib;LLVMGlobalISel.lib;LLVMInstCombine.lib;LLVMInstrumentation.lib;LLVMInterpreter.lib;LLVMipo.lib;LLVMIRReader.lib;LLVMJITLink.lib;LLVMLibDriver.lib;LLVMLineEditor.lib;LLVMLinker.lib;LLVMLTO.lib;LLVMMC.lib;LLVMMCA.lib;LLVMMCDisassembler.lib;LLVMMCJIT.lib;LLVMMCParser.lib;LLVMMIRParser.lib;LLVMObjCARCOpts.lib;LLVMObject.lib;LLVMObjectYAML.lib;LLVMOption.lib;LLVMOrcJIT.lib;LLVMPasses.lib;LLVMProfileData.lib;LLVMRemarks.lib;LLVMRuntimeDyld.lib;LLVMScalarOpts.lib;LLVMSelectionDAG.lib;LLVMSupport.lib;LLVMSymbolize.lib;LLVMTableGen.lib;LLVMTarget.lib;LLVMTextAPI.lib;LLVMTransformUtils.lib;LLVMVectorize.lib;LLVMWindowsManifest.lib;LLVMX86AsmParser.lib;LLVMX86CodeGen.lib;LLVMX86Desc.lib;LLVMX86Disassembler.lib;LLVMX86Info.lib;LLVMX86Utils.lib;LLVMXRay.lib;LTO.lib;Remarks.lib</code>.</p>
+<p>Create a <code>main.cpp</code> file.</p>
+<p>Copy the content of <code>D:\llvm\9.0.1rc3\src\examples\Kaleidoscope\Chapter2\toy.cpp</code>
+to <code>main.cpp</code>.</p>
+<p>Now the project can be built.</p>
+
+  </article>
+  <!-- post_content -->
+
+  <div class="prev_next_posts_block">
+    <div>
+      <span class="prev_post_prompt">Previous Post: </span><a class="prev_post_link" href="/blog/posts/mysql-master-slave-replication-recovery">MySQL master-slave replication recovery</a><span class="prev_post_date">(2019.12.08)</span>
+    </div>
+    <div>
+      <span class="next_post_prompt">First Post: </span><a class="next_post_link" href="/blog/posts/aoikwinwhich-which-program-implemented-in-various-languages">AoikWinWhich - which program implemented in various languages</a><span class="next_post_date">(2018.04.22)</span>
+    </div>
+  </div>
+
+  <!-- Special syntax below is for Vue rendering on the client side -->
+  <div v-cloak id="post_comments_block" class="post_comments_block">
+    <p class="title">Comments:</p>
+    <div class="write_comment_block">
+      <div class="comment_info_block">
+        <input v-model="commenter_name" class="commenter_name" placeholder="Your name"></input>
+        <div class="replyto_block">
+          <span>Reply to:</span>
+          <select v-model="replyto_comment_id">
+             <!-- `0` is a special value meaning no replyto -->
+             <option disabled value="0"></option>
+             <option v-for="comment_id in comment_ids" :value="comment_id">{{comment_id}}</option>
+          </select>
+        </div>
+      </div>
+      <textarea v-model="comment_content" class="comment_content" placeholder="Comment"></textarea>
+      <div><input v-on:click="comment_submit_button_on_click" class="submit_button" type="button" value="Submit"></input></div>
+    </div>
+    <ul>
+        <li v-for="comment_info in comment_infos" v-bind:class="comment_info.is_admin ? 'is_admin' : ''">
+            <a v-bind:id="'comment-' + comment_info.comment_id"
+              v-bind:href="'#comment-' + comment_info.comment_id" class="comment_id">{{comment_info.comment_id}}</a>
+            <div class="comment_content">{{comment_info.comment_content}}</div>
+            <div class="comment_info">
+              <span class="commenter_name">{{comment_info.commenter_name}}</span>
+              <span class="create_time">{{comment_info.create_time}}</span>
+              <template v-if="comment_info.replyto_comment_id > 0">
+              <span>to <a v-bind:href="'#comment-' + comment_info.replyto_comment_id">comment-{{comment_info.replyto_comment_id}}</a></span>
+              </template>
+              <a v-bind:data-comment-id="comment_info.comment_id" v-on:click="comment_reply_button_on_click" class="reply_button" href="#post_comments_block">Reply to this</a>
+            </div>
+        </li>
+    </ul>
+  </div>
+  
+
+  <!-- post_toc -->
+  <div id="post_toc_block" class="post_toc_block is_hidden">
+    <a v-on:click="post_toc_hide_link_on_click" data-shown-text="Hide" data-hidden-text="TOC" class="hide_link" href="javascript:void(0)">TOC</a>
+    <span class="title">Contents</span>
+  </div>
+  <!-- post_toc -->
+
+  <!-- back_to_top -->
+  <div id="back_to_top_block" class="back_to_top_block is_hidden">
+    <a v-on:click="back_to_top_button_on_click">
+      <div class="arrow_shape">
+        <div class="arrow_head"></div>
+        <div class="arrow_body"></div>
+      </div>
+    </a>
+  </div>
+  <!-- back_to_top -->
+
+  <div id="post_id" style="display: none;">58</div>
+  <!-- main_inner -->
+</main>
+<!-- main -->
+
+<!-- back_to_top -->
+
+<!-- footer -->
+<footer>
+  <!-- footer_inner -->
+  <span>This blog is powered by my own project <a href="https://github.com/AoiKuiyuyou/AoikSeldomStaticSite">AoikSeldomStaticSite</a>.</span>
+  <!-- footer_inner -->
+</footer>
+<!-- footer -->
+
+<!-- bottom_scripts -->
+
+<script type="text/javascript" src="/blog/libs_outer/jquery/3.3.1/jquery.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/vue/2.5.16/vue.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/toastr/2.1.3/toastr.min.js"></script>
+<script type="text/javascript" src="/blog/libs_outer/highlight/9.12.0/highlight.min.js"></script>
+<script type="text/javascript" src="/blog/libs_inner/base/post.js"></script>
+<!-- bottom_scripts -->
+
+</div>
+<!-- vue_app -->
+
+</body>
+</html>
