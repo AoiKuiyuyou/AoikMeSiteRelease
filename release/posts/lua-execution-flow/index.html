@@ -431,9 +431,12 @@ static int finishpcall (lua_State *L, int status, lua_KContext extra) {
 # Macro for `lua_pcallk`.
 # Continuation function argument `ctx` be 0.
 # Continuation function `k` be NULL.
-#</code></pre><p>// lapi.c--lua_pcallk...(6YGT0)
-#define lua_pcall(L,n,r,f)  lua_pcallk(L, (n), (r), (f), 0, NULL)</p>
-<pre><code>
+#
+```
+// lapi.c--lua_pcallk...(6YGT0)
+#define lua_pcall(L,n,r,f)  lua_pcallk(L, (n), (r), (f), 0, NULL)
+```
+
 
 # ----- lapi.c--lua_pcallk (6YGT0) -----
 # Call target function on stack.
@@ -584,8 +587,11 @@ LUA_API int lua_pcallk (
 # Macro for `lua_callk`.
 # Continuation function argument `ctx` be 0.
 # Continuation function `k` be NULL.
-#</code></pre><p>#define lua_call(L,n,r)   lua_callk(L, (n), (r), 0, NULL)</p>
-<pre><code>
+#
+```
+#define lua_call(L,n,r)   lua_callk(L, (n), (r), 0, NULL)
+```
+
 
 # ----- lapi.c--lua_callk (6OHLR) -----
 LUA_API void lua_callk (
@@ -674,8 +680,11 @@ ldo.c--luaD_pcall(
 
   // Call `luaD_rawrunprotected` to call target function with given target
   // function argument.
-  ldo.c--luaD_rawrunprotected...(2LSGL)</code></pre><p>  status = luaD_rawrunprotected(L, func, u);c</p>
-<pre><code>
+  ldo.c--luaD_rawrunprotected...(2LSGL)
+  ```
+  status = luaD_rawrunprotected(L, func, u);c
+  ```
+
   if (status != LUA_OK) {  /* an error occurred? */
     // Get old stack top pointer.
     StkId oldtop = restorestack(L, old_top);
@@ -756,8 +765,11 @@ int luaD_rawrunprotected (lua_State *L, Pfunc f, void *ud) {
 # `LUAI_TRY` calls `setjmp` to save current execution context to
 # `L-&gt;errorJmp-&gt;b`, so that in case of error, execution can jump back at 3GFYH
 #  by restoring context in `L-&gt;errorJmp-&gt;b`.
-#</code></pre><p>#define LUAI_TRY(L,c,a)   if (setjmp((c)-&gt;b) == 0) { a }</p>
-<pre><code>
+#
+```
+#define LUAI_TRY(L,c,a)   if (setjmp((c)-&gt;b) == 0) { a }
+```
+
 
 # ----- lapi.c--f_call (2FMDX) -----
 # Call `luaD_callnoyield` to call target function.
@@ -1087,8 +1099,12 @@ int moveresults (
 # ----- lapi.h--adjustresults (3RQ2D) -----
 # If the number of results wanted is unfixed, and the call info&#39;s frame top &lt;
 # the stack top, set the call info&#39;s frame top to be equal to the stack top.
-#</code></pre><p>#define adjustresults(L,nres) <br>  { if ((nres) == LUA_MULTRET &amp;&amp; L-&gt;ci-&gt;top &lt; L-&gt;top) L-&gt;ci-&gt;top = L-&gt;top; }</p>
-<pre><code>
+#
+```
+#define adjustresults(L,nres) \
+  { if ((nres) == LUA_MULTRET &amp;&amp; L-&gt;ci-&gt;top &lt; L-&gt;top) L-&gt;ci-&gt;top = L-&gt;top; }
+```
+
 
 # ----- ldo.c--adjust_varargs (5TCEL) -----
 # Move fixed arguments to stack slots after unfixed arguments.
@@ -1712,9 +1728,12 @@ static int luaB_yield (lua_State *L)
 # ----- lcorolib.c--lua_yield (70HS9) -----
 # Macro for `lua_yieldk`.
 # Continuation function argument `ctx` be 0.
-# Continuation function `k` be NULL.</code></pre><p>// lcorolib.c--lua_yieldk...(3E6PN)
-#define lua_yield(L,n)    lua_yieldk(L, (n), 0, NULL)</p>
-<pre><code>
+# Continuation function `k` be NULL.
+```
+// lcorolib.c--lua_yieldk...(3E6PN)
+#define lua_yield(L,n)    lua_yieldk(L, (n), 0, NULL)
+```
+
 
 # ----- lcorolib.c--lua_yieldk (3E6PN) -----
 # Yield from coroutine.
